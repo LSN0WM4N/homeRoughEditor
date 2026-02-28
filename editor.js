@@ -1,6 +1,10 @@
 var editor = {
 
   wall: function (start, end, type, thick) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
     this.thick = thick;
     this.start = start;
     this.end = end;
@@ -31,6 +35,11 @@ var editor = {
   },
 
   wallsComputing: function (WALLS, action = false) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
+
     // IF ACTION == MOVE -> equation2 exist !!!!!
     $('#boxwall').empty();
     $('#boxArea').empty();
@@ -226,6 +235,10 @@ var editor = {
   },
 
   makeWall: function (way) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
     var wallScreen = qSVG.create('none', 'path', {
       d: way,
       stroke: "none",
@@ -240,6 +253,10 @@ var editor = {
   },
 
   invisibleWall: function (wallToInvisble = false) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
     if (!wallToInvisble) wallToInvisble = binder.wall;
     var objWall = editor.objFromWall(wallBind);
     if (objWall.length == 0) {
@@ -259,6 +276,10 @@ var editor = {
   },
 
   visibleWall: function (wallToInvisble = false) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
     if (!wallToInvisble) wallToInvisble = binder.wall;
     wallToInvisble.type = "normal";
     wallToInvisble.thick = wallToInvisble.backUp;
@@ -271,6 +292,10 @@ var editor = {
   },
 
   architect: function (WALLS) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
     editor.wallsComputing(WALLS);
     Rooms = qSVG.polygonize(WALLS);
     $('#boxRoom').empty();
@@ -280,6 +305,10 @@ var editor = {
   },
 
   splitWall: function (wallToSplit = false) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
     if (!wallToSplit) wallToSplit = binder.wall;
     var eqWall = editor.createEquationFromWall(wallToSplit);
     var wallToSplitLength = qSVG.gap(wallToSplit.start, wallToSplit.end);
@@ -537,6 +566,10 @@ var editor = {
 
   // value can be "text label", "step number in stair", etc...
   obj2D: function (family, classe, type, pos, angle, angleSign, size, hinge = 'normal', thick, value) {
+    if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+      console.warn(`[editor] Operation blocked by readonly method`);
+      return;
+    }
     this.family = family   // inWall, stick, collision, free
     this.class = classe;  // door, window, energy, stair, measure, text ?
     this.type = type; // simple, double, simpleSlide, aperture, doubleSlide, fixed, switch, lamp....

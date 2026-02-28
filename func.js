@@ -1,10 +1,10 @@
 //init
-WALLS = [];
-OBJDATA = [];
-ROOM = [];
-HISTORY = [];
-wallSize = 20;
-partitionSize = 8;
+let WALLS = [];
+let OBJDATA = [];
+let ROOM = [];
+let HISTORY = [];
+let wallSize = 20;
+let partitionSize = 8;
 let drag = 'off';
 let action = 0;
 let magnetic = 0;
@@ -13,23 +13,23 @@ let Rcirclebinder = 8;
 let mode = 'select_mode';
 let modeOption;
 let linElement = $('#lin');
-taille_w = linElement.width();
-taille_h = linElement.height();
+let taille_w = linElement.width();
+let taille_h = linElement.height();
 let offset = linElement.offset();
-grid = 20;
-showRib = true;
-showArea = true;
-meter = 60;
-grid_snap = 'off';
-colorbackground = "#ffffff";
-colorline = "#fff";
-colorroom = "#f0daaf";
-colorWall = "#666";
-pox = 0;
-poy = 0;
-segment = 0;
-xpath = 0;
-ypath = 0;
+let grid = 20;
+let showRib = true;
+let showArea = true;
+let meter = 60;
+let grid_snap = 'off';
+let colorbackground = "#ffffff";
+let colorline = "#fff";
+let colorroom = "#f0daaf";
+let colorWall = "#666";
+let pox = 0;
+let poy = 0;
+let segment = 0;
+let xpath = 0;
+let ypath = 0;
 let width_viewbox = taille_w;
 let height_viewbox = taille_h;
 let ratio_viewbox = height_viewbox / width_viewbox;
@@ -43,12 +43,16 @@ let factor = 1;
 // **************************************************************************
 
 function initHistory(boot = false) {
+    if (window.__READONLY_MODE__ && !([false, "recovery"].includes(boot))) return;
+
     HISTORY.index = 0;
     if (!boot && localStorage.getItem('history')) localStorage.removeItem('history');
     if (localStorage.getItem('history') && boot === "recovery") {
         let historyTemp = JSON.parse(localStorage.getItem('history'));
         load(historyTemp.length - 1, "boot");
         save("boot");
+        // Dispatch an event to let know that the plane is loaded
+        dispatchEvent(new CustomEvent('history:init', { bubbles: true, composed: true }));
     }
     if (boot === "newSquare") {
         if (localStorage.getItem('history')) localStorage.removeItem('history');
@@ -241,6 +245,7 @@ function initHistory(boot = false) {
 }
 
 document.getElementById('redo').addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
     if (HISTORY.index < HISTORY.length) {
         load(HISTORY.index);
         HISTORY.index++;
@@ -252,6 +257,7 @@ document.getElementById('redo').addEventListener("click", function () {
 });
 
 document.getElementById('undo').addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
     if (HISTORY.index > 0) {
         $('#undo').removeClass('disabled');
         if (HISTORY.index - 1 > 0) {
@@ -264,6 +270,8 @@ document.getElementById('undo').addEventListener("click", function () {
 });
 
 function save(boot = false) {
+    if (window.__READONLY_MODE__) return false;
+
     if (boot) localStorage.removeItem('history');
     // FOR CYCLIC OBJ INTO LOCALSTORAGE !!!
     for (let k in WALLS) {
@@ -609,6 +617,7 @@ document.getElementById('report_mode').addEventListener("click", function () {
 });
 
 document.getElementById('wallWidth').addEventListener("input", function () {
+    if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     binder.wall.thick = sliderValue;
     binder.wall.type = "normal";
@@ -623,6 +632,7 @@ document.getElementById('wallWidth').addEventListener("input", function () {
 });
 
 document.getElementById("bboxTrash").addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
     binder.obj.graph.remove();
     binder.graph.remove();
     OBJDATA.splice(OBJDATA.indexOf(binder.obj), 1);
@@ -630,11 +640,12 @@ document.getElementById("bboxTrash").addEventListener("click", function () {
     $('#panel').show(200);
     fonc_button('select_mode');
     $('#boxinfo').html('Deleted object');
-    delete binder;
+    binder = undefined;
     rib();
 });
 
 document.getElementById("bboxStepsAdd").addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
     let newValue = document.getElementById("bboxStepsVal").textContent;
     if (newValue < 15) {
         newValue++;
@@ -645,6 +656,7 @@ document.getElementById("bboxStepsAdd").addEventListener("click", function () {
 });
 
 document.getElementById("bboxStepsMinus").addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
     let newValue = document.getElementById("bboxStepsVal").textContent;
     if (newValue > 2) {
         newValue--;
@@ -655,6 +667,7 @@ document.getElementById("bboxStepsMinus").addEventListener("click", function () 
 });
 
 document.getElementById('bboxWidth').addEventListener("input", function () {
+    if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
     objTarget.size = (sliderValue / 100) * meter;
@@ -665,6 +678,7 @@ document.getElementById('bboxWidth').addEventListener("input", function () {
 });
 
 document.getElementById('bboxHeight').addEventListener("input", function () {
+    if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
     objTarget.thick = (sliderValue / 100) * meter;
@@ -675,6 +689,7 @@ document.getElementById('bboxHeight').addEventListener("input", function () {
 });
 
 document.getElementById('bboxRotation').addEventListener("input", function () {
+    if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
     objTarget.angle = sliderValue;
@@ -685,6 +700,7 @@ document.getElementById('bboxRotation').addEventListener("input", function () {
 });
 
 document.getElementById('doorWindowWidth').addEventListener("input", function () {
+    if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
     let wallBind = editor.rayCastingWalls(objTarget, WALLS);
@@ -706,7 +722,8 @@ document.getElementById('doorWindowWidth').addEventListener("input", function ()
 });
 
 document.getElementById("objToolsHinge").addEventListener("click", function () {
-    let objTarget = binder.obj;
+    if (window.__READONLY_MODE__) return;
+    let objTarget = binder.obj;    
     let hingeStatus = objTarget.hinge; // normal - reverse
     if (hingeStatus === 'normal') {
         objTarget.hinge = 'reverse';
@@ -715,6 +732,13 @@ document.getElementById("objToolsHinge").addEventListener("click", function () {
 });
 
 window.addEventListener("load", function () {
+    if (window.__READONLY_MODE__) {        
+        document.getElementById('moveBox').style.transform = "translateX(-165px)";
+        document.getElementById('zoomBox').style.transform = "translateX(-165px)";
+        const myModal = new bootstrap.Modal($('#myModal'))
+        myModal.show();
+        return
+    };
     document.getElementById('panel').style.transform = "translateX(200px)";
     document.getElementById('panel').addEventListener("transitionend", function () {
         document.getElementById('moveBox').style.transform = "translateX(-165px)";
@@ -728,10 +752,12 @@ window.addEventListener("load", function () {
 });
 
 document.getElementById('sizePolice').addEventListener("input", function () {
+    if (window.__READONLY_MODE__) return;
     document.getElementById('labelBox').style.fontSize = this.value + 'px';
 });
 
 $('#textToLayer').on('hidden.bs.modal', function (e) {
+    if (window.__READONLY_MODE__) return;
     fonc_button('select_mode');
     action = 0;
     let textToMake = document.getElementById('labelBox').textContent;
@@ -745,7 +771,7 @@ $('#textToLayer').on('hidden.bs.modal', function (e) {
         binder.graph.remove();
         $('#boxText').append(OBJDATA[OBJDATA.length - 1].graph);
         OBJDATA[OBJDATA.length - 1].update();
-        delete binder;
+        binder = undefined;
         $('#boxinfo').html('Added text');
         save();
     } else {
@@ -871,10 +897,11 @@ document.getElementById("showLayerEnergy").addEventListener("click", function ()
 // });
 
 document.getElementById("applySurface").addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
     $('#roomTools').hide(100);
     $('#panel').show(200);
     binder.remove();
-    delete binder;
+    binder = undefined;
     let id = $('#roomIndex').val();
     //COLOR
     let data = $('#roomBackground').val();
@@ -908,17 +935,19 @@ document.getElementById("applySurface").addEventListener("click", function () {
 });
 
 document.getElementById("resetRoomTools").addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
     $('#roomTools').hide(100);
     $('#panel').show(200);
     binder.remove();
-    delete binder;
+    binder = undefined;
     $('#boxinfo').html('Updated room');
     fonc_button('select_mode');
 
 });
 
 document.getElementById("wallTrash").addEventListener("click", function () {
-    let wall = binder.wall;
+    if (window.__READONLY_MODE__) return;
+    let wall = binder.wall;    
     for (let k in WALLS) {
         if (isObjectsEquals(WALLS[k].child, wall)) WALLS[k].child = null;
         if (isObjectsEquals(WALLS[k].parent, wall)) {
@@ -970,7 +999,7 @@ for (let k = 0; k < objTrashBtn.length; k++) {
         $('#boxinfo').html('Selection mode');
         $('#panel').show('200');
         binder.graph.remove();
-        delete binder;
+        binder = undefined;
         rib();
         $('#panel').show('300');
     });
@@ -1091,7 +1120,7 @@ function zoom_maker(lens, xmove, xview) {
     });
 }
 
-tactile = false;
+let tactile = false;
 
 function calcul_snap(event, state) {
     if (event.touches) {
@@ -1123,14 +1152,14 @@ function calcul_snap(event, state) {
     };
 }
 
-minMoveGrid = function (mouse) {
+const minMoveGrid = function (mouse) {
     return Math.abs(Math.abs(pox - mouse.x) + Math.abs(poy - mouse.y));
 }
 
 function intersectionOff() {
     if (typeof (lineIntersectionP) != 'undefined') {
         lineIntersectionP.remove();
-        delete lineIntersectionP;
+        lineIntersectionP = undefined;
     }
 }
 
@@ -1143,7 +1172,7 @@ function intersection(snap, range = Infinity, except = ['']) {
 
     if (typeof (lineIntersectionP) != 'undefined') {
         lineIntersectionP.remove();
-        delete lineIntersectionP;
+        lineIntersectionP = undefined;
     }
 
     lineIntersectionP = qSVG.create("boxbind", "path", { // ORANGE TEMP LINE FOR ANGLE 0 90 45 -+
@@ -1561,6 +1590,10 @@ function rib(shift = 5) {
 }
 
 function cursor(tool) {
+    if (window.__READONLY_MODE__) {
+        linElement.css('cursor', tool === 'grab' ? 'grab' : 'default');
+        return;
+    }
     if (tool === 'grab') tool =
         "url('https://wiki.openmrs.org/s/en_GB/7502/b9217199c27dd617c8d51f6186067d7767c5001b/_/images/icons/emoticons/add.png') 8 8, auto";
     if (tool === 'scissor') tool = "url('https://maxcdn.icons8.com/windows10/PNG/64/Hands/hand_scissors-64.png'), auto";
@@ -1644,34 +1677,38 @@ function fonc_button(modesetting, option) {
 
     if (typeof (lineIntersectionP) != 'undefined') {
         lineIntersectionP.remove();
-        delete lineIntersectionP;
+        lineIntersectionP = undefined;
     }
 }
 
 
 $('#distance_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Add a measurement');
     fonc_button('distance_mode');
 });
 
 $('#room_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     linElement.css('cursor', 'pointer');
     $('#boxinfo').html('Config. of rooms');
     fonc_button('room_mode');
 });
 
 $('#select_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     $('#boxinfo').html('Mode "select"');
     if (typeof (binder) != 'undefined') {
         binder.remove();
-        delete binder;
+        binder = undefined;
     }
 
     fonc_button('select_mode');
 });
 
 $('#line_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Creation of wall(s)');
     multi = 0;
@@ -1684,6 +1721,7 @@ $('#line_mode').click(function () {
 });
 
 $('#partition_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Creation of thin wall(s)');
     multi = 0;
@@ -1691,12 +1729,14 @@ $('#partition_mode').click(function () {
 });
 
 $('#rect_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Room(s) creation');
     fonc_button('rect_mode');
 });
 
 $('.door').click(function () {
+    if (window.__READONLY_MODE__) return;
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Add a door');
     $('#door_list').hide(200);
@@ -1704,6 +1744,7 @@ $('.door').click(function () {
 });
 
 $('.window').click(function () {
+    if (window.__READONLY_MODE__) return;
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Add a window');
     $('#door_list').hide(200);
@@ -1712,18 +1753,21 @@ $('.window').click(function () {
 });
 
 $('.object').click(function () {
+    if (window.__READONLY_MODE__) return;
     cursor('move');
     $('#boxinfo').html('Add an object');
     fonc_button('object_mode', this.id);
 });
 
 $('#stair_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     cursor('move');
     $('#boxinfo').html('Add stair');
     fonc_button('object_mode', 'simpleStair');
 });
 
 $('#node_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     $('#boxinfo')
         .html('Cut a wall<br/><span style=\"font-size:0.7em\">Warning : Cutting the wall of a room can cancel its ' +
             'configuration</span>');
@@ -1731,12 +1775,14 @@ $('#node_mode').click(function () {
 });
 
 $('#text_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     $('#boxinfo').html('Add text<br/><span style=\"font-size:0.7em\">Place the cursor to the desired location, then ' +
         'type your text.</span>');
     fonc_button('text_mode');
 });
 
 $('#grid_mode').click(function () {
+    if (window.__READONLY_MODE__) return;
     if (grid_snap === 'on') {
         grid_snap = 'off';
         $('#boxinfo').html('Help grid off');
