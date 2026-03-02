@@ -1038,7 +1038,6 @@ function realBboxShow(coords) {
     }
 }
 
-
 function limitObj(equation, size, coords, message = false) {
     if (message) {
         console.log(message);
@@ -1658,8 +1657,8 @@ function raz_button() {
     $('#distance_mode').addClass('btn-default');
     $('#object_mode').removeClass('btn-success');
     $('#object_mode').addClass('btn-default');
-    $('#stair_mode').removeClass('btn-success');
-    $('#stair_mode').addClass('btn-default');
+    $('#misc_items').removeClass('btn-success');
+    $('#misc_items').addClass('btn-default');
 }
 
 function fonc_button(modesetting, option) {
@@ -1759,11 +1758,13 @@ $('.object').click(function () {
     fonc_button('object_mode', this.id);
 });
 
-$('#stair_mode').click(function () {
+$('#misc_items').click(function () {
     if (window.__READONLY_MODE__) return;
     cursor('move');
-    $('#boxinfo').html('Add stair');
-    fonc_button('object_mode', 'simpleStair');
+    $('#boxinfo').html('Add a misc item');
+    $('#door_list').hide(200);
+    $('#window_list').hide(200);
+    fonc_button('object_mode', this.id);
 });
 
 $('#node_mode').click(function () {
@@ -1934,6 +1935,13 @@ function carpentryCalc(classObj, typeObj, sizeObj, thickObj, dividerObj = 10) {
             pushToConstruc(construc, "M -2,1 L -2,3 L " + sizeObj / 2 + ",3 L " + sizeObj / 2 + ",1 L -1,1 L -1,-1 L -2,-1 Z", "#ccc", "none", '');
             construc.params.resize = true;
             construc.params.resizeLimit.width = { min: 60, max: 300 };
+        }
+        if (typeObj === 'glass') { // SVG hr.svg
+                pushToConstruc(construc, `M ${-sizeObj / 2},${-thickObj / 2} L ${-sizeObj / 2},${thickObj / 2} L ${sizeObj / 2},${ thickObj / 2 } L ${ sizeObj / 2 },${ -thickObj / 2 } Z`, "#CCD5FB", "#0C2796",'');
+                pushToConstruc(construc, `M ${ -sizeObj / 2 },0 L ${ sizeObj / 2 },0`, "none", "#0C2796", '');
+
+                construc.params.resize = true;
+                construc.params.resizeLimit.width = { min: 30, max: 300 };
         }
     }
 

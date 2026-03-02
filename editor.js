@@ -572,7 +572,7 @@ var editor = {
     }
     this.family = family   // inWall, stick, collision, free
     this.class = classe;  // door, window, energy, stair, measure, text ?
-    this.type = type; // simple, double, simpleSlide, aperture, doubleSlide, fixed, switch, lamp....
+    this.type = type; // simple, double, simpleSlide, aperture, glass, doubleSlide, fixed, switch, lamp....
     this.x = pos.x;
     this.y = pos.y;
     this.angle = angle;
