@@ -65,27 +65,59 @@ document.addEventListener("keydown", function (event) {
   if (mode != "text_mode") {
     if (event.keyCode == '37') {
       //LEFT
-      zoom_maker('zoomleft', 100, 30);
+      if (mode === 'select_mode')
+        zoom_maker('zoomleft', 100, 30);
     }
+
     if (event.keyCode == '38') {
       //UP
-      zoom_maker('zoomtop', 100, 30);
+      if (mode === 'select_mode')
+        zoom_maker('zoomtop', 100, 30);
     }
+    
     if (event.keyCode == '39') {
       //RIGHT
-      zoom_maker('zoomright', 100, 30);
+      if (mode === 'select_mode')
+        zoom_maker('zoomright', 100, 30);
     }
+    
     if (event.keyCode == '40') {
       //DOWN
-      zoom_maker('zoombottom', 100, 30);
+      if (mode === 'select_mode')
+        zoom_maker('zoombottom', 100, 30);
     }
+    
     if (event.keyCode == '107') {
       //+
-      zoom_maker('zoomin', 20, 50);
+      if (mode === 'select_mode')
+        zoom_maker('zoomin', 20, 50);
     }
+    
     if (event.keyCode == '109') {
       //-
-      zoom_maker('zoomout', 20, 50);
+      if (mode === 'select_mode')
+        zoom_maker('zoomout', 20, 50);
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        $('#undo').click();
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        $('#redo').click();
+    }
+
+    if (event.key === 'Escape') {
+        console.log(`[${ mode }]`)
+        if (mode === 'edit_boundingBox_mode') {
+            mode = 'select_mode';
+            fonc_button('select_mode');
+            $('#boxinfo').html('Selection mode');
+            $('#objBoundingBox').hide(100);
+            $('#panel').show(200);
+            binder.graph.remove();
+            binder = undefined;
+        }
     }
   }
   // else {
@@ -103,6 +135,8 @@ document.addEventListener("keydown", function (event) {
 function _MOUSEMOVE(event) {
   event.preventDefault();
   $('.sub').hide(100);
+
+  console.log("MouseMove: ", mode);
 
   //**************************************************************************
   //********************   TEXTE   MODE **************************************
@@ -127,7 +161,7 @@ function _MOUSEMOVE(event) {
         typeObj,
       });
       if (modeOption === 'simpleStair')
-        binder = new editor.obj2D("free", "misc", "stair", snap, 0, 0, 0, "normal", 0, 15);
+        binder = new editor.obj2D("free", "misc", "stair", snap, 0, 0, 60, "normal", 180, 15);
       else if (modeOption === 'toilet') {
         binder = new editor.obj2D("free", "misc", "toilet", snap, 0, 0, 32, "normal", 50, 15);
       }
@@ -139,6 +173,10 @@ function _MOUSEMOVE(event) {
       $('#boxbind').append(binder.graph);
     }
     else {
+
+      const prevX = binder.x;
+      const prevY = binder.y; 
+      const prevAngle = binder.angle;
 
       if ((binder.family != 'stick' && binder.family != 'collision') || WALLS.length == 0) {
         binder.x = snap.x;
@@ -185,7 +223,15 @@ function _MOUSEMOVE(event) {
         }
         binder.angle = angleWall;
         binder.update();
+
+        if (hasCollision(binder, 20)) {
+            binder.x = prevX;
+            binder.y = prevY;
+            binder.angle = prevAngle;
+            binder.update();
+        }
       }
+
     }
   }
 
@@ -303,11 +349,13 @@ function _MOUSEMOVE(event) {
 
     snap = calcul_snap(event, grid_snap);
     if (wallSelect = editor.nearWall(snap)) {
+    
       var wall = wallSelect.wall;
       if (wall.type != 'separate') {
         if (typeof (binder) == 'undefined') {
           // family, classe, type, pos, angle, angleSign, size, hinge, thick
           binder = new editor.obj2D("inWall", "doorWindow", modeOption, wallSelect, 0, 0, 60, "normal", wall.thick);
+          
           var angleWall = qSVG.angleDeg(wall.start.x, wall.start.y, wall.end.x, wall.end.y);
           var v1 = qSVG.vectorXY({ x: wall.start.x, y: wall.start.y }, { x: wall.end.x, y: wall.end.y });
           var v2 = qSVG.vectorXY({ x: wall.end.x, y: wall.end.y }, snap);
@@ -324,6 +372,11 @@ function _MOUSEMOVE(event) {
           $('#boxbind').append(binder.graph);
         }
         else {
+
+          var prevX = binder.x;
+          var prevY = binder.y;
+          const prevAngle = binder.angle;
+          
           var angleWall = qSVG.angleDeg(wall.start.x, wall.start.y, wall.end.x, wall.end.y);
           var v1 = qSVG.vectorXY({ x: wall.start.x, y: wall.start.y }, { x: wall.end.x, y: wall.end.y });
           var v2 = qSVG.vectorXY({ x: wall.end.x, y: wall.end.y }, snap);
@@ -356,6 +409,13 @@ function _MOUSEMOVE(event) {
             binder.limit = limits;
             binder.angle = angleWall;
             binder.thick = wall.thick;
+            binder.update();
+          }
+
+          if (hasCollision(binder, 20)) {
+            binder.x = prevX;
+            binder.y = prevY;
+            binder.angle = prevAngle;
             binder.update();
           }
         }
@@ -1064,12 +1124,26 @@ function _MOUSEMOVE(event) {
     // **********************************************************************
     // binder.obj.params.move ---> FOR MEASURE DONT MOVE
     if (binder.type == 'boundingBox' && action == 1 && binder.obj.params.move) {
-      binder.x = snap.x;
-      binder.y = snap.y;
-      binder.obj.x = snap.x;
-      binder.obj.y = snap.y;
-      binder.obj.update();
-      binder.update();
+        const prevX = binder.obj.x;
+        const prevY = binder.obj.y;
+
+        // Mover temporalmente
+        binder.x = snap.x;
+        binder.y = snap.y;
+        binder.obj.x = snap.x;
+        binder.obj.y = snap.y;
+        binder.obj.update(); 
+
+        if (hasCollision(binder.obj)) {
+            binder.x = prevX;
+            binder.y = prevY;
+            binder.obj.x = prevX;
+            binder.obj.y = prevY;
+            binder.obj.update();
+            cursor('not-allowed');
+        } else {
+            binder.update();
+        }
     }
 
     // **********************************************************************
@@ -1078,9 +1152,15 @@ function _MOUSEMOVE(event) {
     if (binder.type == 'obj' && action == 1) {
       if (wallSelect = editor.nearWall(snap)) {
         if (wallSelect.wall.type != 'separate') {
+            
           inWallRib(wallSelect.wall);
-
+            
           var objTarget = binder.obj;
+
+          const prevX = objTarget.x;
+          const prevY = objTarget.y;
+          const prevAngle = objTarget.angle;
+
           var wall = wallSelect.wall;
           var angleWall = qSVG.angleDeg(wall.start.x, wall.start.y, wall.end.x, wall.end.y);
           var v1 = qSVG.vectorXY({ x: wall.start.x, y: wall.start.y }, { x: wall.end.x, y: wall.end.y });
@@ -1129,6 +1209,17 @@ function _MOUSEMOVE(event) {
             objTarget.thick = wall.thick;
             binder.update();
             objTarget.update();
+          }
+
+          if (hasCollision(objTarget, 20)) {
+            objTarget.x = prevX;
+            objTarget.y = prevY;
+            objTarget.angle = prevAngle;
+            binder.x = prevX;
+            binder.y = prevY;
+            binder.angle = prevAngle;
+            objTarget.update();
+            binder.update();
           }
         }
       }
@@ -1455,6 +1546,15 @@ function _MOUSEUP(event) {
   //**************        OBJECT   MODE **************************************
   //**************************************************************************
   if (mode == 'object_mode') {
+    binder.update();
+    console.log("Entering => ", binder);
+    if (hasCollision(binder, 20)) {
+        $('#boxinfo').html('<span style="color:#ff4444">Cannot place object here — too close to another object</span>');
+        binder.graph.remove();
+        binder = undefined;
+        return;
+    }
+
     OBJDATA.push(binder);
     binder.graph.remove();
     var targetBox = 'boxcarpentry';

@@ -13,3 +13,29 @@ During the initial floor plan selection phase, it is still possible to invoke ed
 A more robust solution would be to enforce the read-only restriction at all times and only temporarily unlock the methods during the initialization phase of a new floor plan. Once the initialization process is complete, the system should immediately restore the locked state.
 
 This approach would ensure stricter control over unintended external manipulation while preserving the intended public API structure.
+
+## Wall-Only Item
+
+I implemented a new Window > Glass element as a wall-only item.
+This component can be dragged and attached exclusively to walls, following the wall constraints defined in the system. It can also be removed through its corresponding contextual menu.
+
+## Free Item
+
+I added a new Misc > Toilet element as a free item.
+Unlike wall-constrained elements, this object can move freely across the floor plan. It also includes full support for deletion via its contextual menu.
+
+## Additional Improvements & Personal Contributions
+
+#### Implemented keyboard shortcuts:
+
+Ctrl + Z for Undo
+
+Ctrl + Y for Redo
+
+These were added to improve usability and align the editor with standard user experience expectations.
+
+#### Issues 
+
+Fixed a UI bug where adjusting size values using arrow keys inside the settings menu would also move the entire canvas. This unintended behavior has been corrected.
+
+Added Escape key support to exit edition mode, improving workflow efficiency and overall usability.

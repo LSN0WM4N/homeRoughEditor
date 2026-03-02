@@ -1667,18 +1667,9 @@ function fonc_button(modesetting, option) {
 
     $('.sub').hide();
     raz_button();
-    // if (option != 'simpleStair') {
-    //     $('#' + modesetting).removeClass('btn-default');
-    //     $('#' + modesetting).addClass('btn-success');
-
-    // }
 
     mode = modesetting;
     modeOption = option;
-    console.log("Fonc_button: ", {
-        mode, 
-        modeOption
-    });
 
     if (typeof (lineIntersectionP) != 'undefined') {
         lineIntersectionP.remove();
@@ -2016,11 +2007,6 @@ function carpentryCalc(classObj, typeObj, sizeObj, thickObj, dividerObj = 10) {
             const scaleX = construc.params.width / baseWidth;
             const scaleY = construc.params.height / baseHeight;
 
-            console.log("Toilet Scale => ", {
-                scaleX,
-                scaleY
-            })
-
             const offsetX = baseWidth / 2;
             const offsetY = baseHeight / 2;
 
@@ -2303,4 +2289,17 @@ function pushToConstruc(construc, path, fill, stroke, strokeDashArray, opacity =
         'strokeDashArray': strokeDashArray,
         'opacity': opacity
     });
+}
+
+const bboxOverlap = (a, b, m = 0) => !(a.right + m < b.left || a.left - m > b.right || a.bottom + m < b.top || a.top - m > b.bottom);
+function hasCollision(movingObj, margin = 0) {
+    console.log(OBJDATA);
+    for (var i = 0; i < OBJDATA.length; i++) {
+        var other = OBJDATA[i];
+        if (other.family !== movingObj.family || isObjectsEquals(other, movingObj)) 
+            continue;
+        if (bboxOverlap(movingObj.bbox, other.bbox, margin))
+            return true;
+    }
+    return false;
 }
