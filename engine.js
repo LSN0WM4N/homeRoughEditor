@@ -129,7 +129,7 @@ function _MOUSEMOVE(event) {
       if (modeOption === 'simpleStair')
         binder = new editor.obj2D("free", "misc", "stair", snap, 0, 0, 0, "normal", 0, 15);
       else if (modeOption === 'toilet') {
-        binder = new editor.obj2D("free", "misc", "toilet", snap, 0, 0, 0, "normal", 0, 15);
+        binder = new editor.obj2D("free", "misc", "toilet", snap, 0, 0, 32, "normal", 50, 15);
       }
       else {
         var typeObj = modeOption;

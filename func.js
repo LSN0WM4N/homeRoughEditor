@@ -2016,6 +2016,11 @@ function carpentryCalc(classObj, typeObj, sizeObj, thickObj, dividerObj = 10) {
             const scaleX = construc.params.width / baseWidth;
             const scaleY = construc.params.height / baseHeight;
 
+            console.log("Toilet Scale => ", {
+                scaleX,
+                scaleY
+            })
+
             const offsetX = baseWidth / 2;
             const offsetY = baseHeight / 2;
 
