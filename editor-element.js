@@ -356,8 +356,9 @@ const htmlTemplate = `
       <li><button class="btn btn-light shadow fully " id="text_mode" data-toggle="tooltip" data-placement="right"
           title="Add text">TEXT</button></li>
       <br />
+
       <div id="door_list" class="list-unstyled sub"
-        style="box-shadow:2px 2px 3px #ccc;display:none;background:#fff;border-radius: 0 5px 5px 0; padding:10px;position:absolute;left:200px;width:150px">
+        style="box-shadow:2px 2px 3px #ccc;display:none;background:#fff;border-radius: 0 5px 5px 0; padding:10px;position:absolute;left:200px;width:150px;">
         <button class="btn fully door" id="aperture">Aperture</button>
         <button class="btn fully door" id="simple">Simple</button>
         <button class="btn fully door" id="double">Double</button>
@@ -367,10 +368,12 @@ const htmlTemplate = `
         <button 
           class="btn btn-light shadow fully " 
           id="door_mode"
-          onclick="$('.sub').hide();$('#door_list').toggle(200);$('#window_list').hide();">DOOR</button></li>
+          onclick="$('.sub').hide();$('#door_list').toggle(200);$('#window_list').hide();"
+        >DOOR</button>
+      </li>
 
       <div id="window_list" class="list-unstyled sub"
-        style="box-shadow:2px 2px 3px #ccc;display:none;background:#fff;border-radius: 0 5px 5px 0; padding:10px;position:absolute;left:200px;width:150px">
+        style="box-shadow:2px 2px 3px #ccc;display:none;background:#fff;border-radius: 0 5px 5px 0; padding:10px;position:absolute;left:200px;width:150px;">
         <button class="btn fully window" id="fix">Fix</button>
         <button class="btn fully window" id="flap">Simple</button>
         <button class="btn fully window" id="twin">Double</button>
@@ -384,16 +387,25 @@ const htmlTemplate = `
           onclick="$('.sub').hide();$('#window_list').toggle(200);$('#door_list').hide();"
         >WINDOW</button>
       </li>
+
       <div 
         id="misc_list" 
         class="list-unstyled sub"
-        style="box-shadow:2px 2px 3px #ccc;display:none;background:#fff;border-radius: 0 5px 5px 0; padding:10px;position:absolute;left:200px;width:150px"
+        style="box-shadow:2px 2px 3px #ccc;display:none;background:#fff;border-radius: 0 5px 5px 0; padding:10px;position:absolute;left:200px;width:150px;"
       > 
-        <button class="btn fully object" id="stair">Stair</button>
+        <button class="btn fully object" id="simpleStair">Stair</button>
+        <button class="btn fully object" id="toilet">Toilet</button>
       </div> 
-      <li><button class="btn btn-light shadow fully" id="misc_items"
-          onclick="$('.sub').hide();$('#misc_list').toggle(200);$('#door_list').hide();">MISC</button></li>
+      <li>
+        <button 
+          class="btn btn-light shadow fully" 
+          id="misc_items"
+          onclick="$('.sub').hide();$('#misc_list').toggle(200);$('#door_list').hide();"
+        >MISC</button>
+      </li>
+      
       <br />
+      
       <div id="energy_list" class="list-unstyled sub"
         style="box-shadow:2px 2px 3px #ccc;display:none;background:#fff;border-radius: 0 5px 5px 0; padding:10px;position:absolute;left:200px;bottom:40px;width:600px">
         <div style="width:600px;float:left;padding:10px">

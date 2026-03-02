@@ -122,7 +122,15 @@ function _MOUSEMOVE(event) {
     snap = calcul_snap(event, grid_snap);
     if (typeof (binder) == 'undefined') {
       $('#object_list').hide(200);
-      if (modeOption == 'simpleStair') binder = new editor.obj2D("free", "stair", "simpleStair", snap, 0, 0, 0, "normal", 0, 15);
+      console.log("MouseMove:", {
+        modeOption,
+        typeObj,
+      });
+      if (modeOption === 'simpleStair')
+        binder = new editor.obj2D("free", "misc", "stair", snap, 0, 0, 0, "normal", 0, 15);
+      else if (modeOption === 'toilet') {
+        binder = new editor.obj2D("free", "misc", "toilet", snap, 0, 0, 0, "normal", 0, 15);
+      }
       else {
         var typeObj = modeOption;
         binder = new editor.obj2D("free", "energy", typeObj, snap, 0, 0, 0, "normal", 0);

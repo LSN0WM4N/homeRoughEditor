@@ -670,6 +670,7 @@ document.getElementById('bboxWidth').addEventListener("input", function () {
     if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
+    console.log("Modifienf => ", objTarget);
     objTarget.size = (sliderValue / 100) * meter;
     objTarget.update();
     binder.size = (sliderValue / 100) * meter;
@@ -1666,13 +1667,18 @@ function fonc_button(modesetting, option) {
 
     $('.sub').hide();
     raz_button();
-    if (option != 'simpleStair') {
-        $('#' + modesetting).removeClass('btn-default');
-        $('#' + modesetting).addClass('btn-success');
+    // if (option != 'simpleStair') {
+    //     $('#' + modesetting).removeClass('btn-default');
+    //     $('#' + modesetting).addClass('btn-success');
 
-    }
+    // }
+
     mode = modesetting;
     modeOption = option;
+    console.log("Fonc_button: ", {
+        mode, 
+        modeOption
+    });
 
     if (typeof (lineIntersectionP) != 'undefined') {
         lineIntersectionP.remove();
@@ -1739,6 +1745,7 @@ $('.door').click(function () {
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Add a door');
     $('#door_list').hide(200);
+    $('#misc_item').hide(200);
     fonc_button('door_mode', this.id);
 });
 
@@ -1747,6 +1754,7 @@ $('.window').click(function () {
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Add a window');
     $('#door_list').hide(200);
+    $('#misc_item').hide(200);
     $('#window_list').hide(200);
     fonc_button('door_mode', this.id);
 });
@@ -1755,6 +1763,7 @@ $('.object').click(function () {
     if (window.__READONLY_MODE__) return;
     cursor('move');
     $('#boxinfo').html('Add an object');
+    $('#misc_item').hide(200);
     fonc_button('object_mode', this.id);
 });
 
@@ -1764,7 +1773,7 @@ $('#misc_items').click(function () {
     $('#boxinfo').html('Add a misc item');
     $('#door_list').hide(200);
     $('#window_list').hide(200);
-    fonc_button('object_mode', this.id);
+    // fonc_button('object_mode', this.id);
 });
 
 $('#node_mode').click(function () {
@@ -1978,14 +1987,15 @@ function carpentryCalc(classObj, typeObj, sizeObj, thickObj, dividerObj = 10) {
         });
     }
 
-    if (classObj === 'stair') {
+    if (classObj === 'misc') {
         construc.params.bindBox = true;
         construc.params.move = true;
         construc.params.resize = true;
         construc.params.rotate = true;
-        construc.params.width = 60;
-        construc.params.height = 180;
-        if (typeObj === 'simpleStair') {
+
+        construc.params.width = sizeObj;
+        construc.params.height = thickObj;
+        if (typeObj === 'stair') {
 
             pushToConstruc(construc,
                 "M " + (-sizeObj / 2) + "," + (-thickObj / 2) + " L " + (-sizeObj / 2) + "," + thickObj / 2 + " L " + sizeObj / 2 + "," +
@@ -1996,10 +2006,57 @@ function carpentryCalc(classObj, typeObj, sizeObj, thickObj, dividerObj = 10) {
                 pushToConstruc(construc, "M " + (-sizeObj / 2) + "," + ((-thickObj / 2) + (i * heightStep)) + " L " + (sizeObj / 2) + "," +
                     ((-thickObj / 2) + (i * heightStep)), "none", "#000", 'none');
             }
-            construc.params.resizeLimit.width = { min: 40, max: 200 };
-            construc.params.resizeLimit.height = { min: 40, max: 400 };
         }
+    
+        if (typeObj === 'toilet') {
 
+            const baseWidth = 49.44;
+            const baseHeight = 92.71;
+
+            const scaleX = construc.params.width / baseWidth;
+            const scaleY = construc.params.height / baseHeight;
+
+            const offsetX = baseWidth / 2;
+            const offsetY = baseHeight / 2;
+
+            // Scale functinos
+            const sx = (x) => (x - offsetX) * scaleX;
+            const sy = (y) => (y - offsetY) * scaleY; 
+            const ax = (x) => (x * scaleX);
+            const ay = (y) => (y * scaleY);
+                
+            pushToConstruc(construc, 
+                `M${sx(8.83)},${sy(0.75)}H${sx(40.61)}A${ax(8.08)},${ay(8.08)} 0 0 1 ${sx(48.69)},${sy(8.83)}V${sy(8.84)}A${ax(8.08)},${ay(8.08)} 0 0 1 ${sx(40.61)},${sy(16.92)}
+                 H${sx(8.83)}A${ax(8.08)},${ay(8.08)} 0 0 1 ${sx(0.75)},${sy(8.84)}V${sy(8.83)}A${ax(8.08)},${ay(8.08)} 0 0 1 ${sx(8.83)},${sy(0.75)}Z`,
+            "#CCD5FB", "#0C2796", '');
+
+            pushToConstruc(construc,
+                `M${sx(18.8)},${sy(3.24)}H${sx(30.65)}A${ax(5.59)},${ay(5.59)} 0 0 1 ${sx(36.24)},${sy(8.83)}V${sy(8.84)}A${ax(5.59)},${ay(5.59)} 0 0 1 ${sx(30.65)},${sy(14.43)}
+                 H${sx(18.8)}A${ax(5.59)},${ay(5.59)} 0 0 1 ${sx(13.21)},${sy(8.84)}V${sy(8.83)}A${ax(5.59)},${ay(5.59)} 0 0 1 ${sx(18.8)},${sy(3.24)}Z`,
+            "none", "#0C2796", '');
+
+            pushToConstruc(construc,
+                `M${sx(24.21)},${sy(5.03)}v${ay(7.61)}c${ax(-2.86)},0 ${ax(-5.17)},${ay(-1.7)} ${ax(-5.17)},${ay(-3.81)}s${ax(2.31)},${ay(-3.81)} ${ax(5.17)},${ay(-3.81)}Z`,
+            "none", "#0C2796", '');
+
+            pushToConstruc(construc,
+                `M${sx(25.23)},${sy(5.03)}v${ay(7.61)}c${ax(2.86)},0 ${ax(5.17)},${ay(-1.7)} ${ax(5.17)},${ay(-3.81)}s-${ax(2.31)},${ay(-3.81)} ${ax(-5.17)},${ay(-3.81)}Z`,
+            "none", "#0C2796", '');
+
+            pushToConstruc(construc,
+                `M${sx(4.73)},${sy(16.92)}H${sx(44.71)}V${sy(20.27)}H${sx(4.73)}Z`,
+            "none", "#0C2796", '');
+
+            pushToConstruc(construc,
+                `M${sx(0.75)},${sy(20.27)}h${ax(47.94)}v${ay(47.72)}c0,${ay(13.23)} ${ax(-10.74)},${ay(23.97)} ${ax(-23.97)},${ay(23.97)}c-${ax(13.23)},0 ${ax(-23.97)},${ay(-10.74)} ${ax(-23.97)},${ay(-23.97)}V${sy(20.27)}Z`,
+            "none", "#0C2796", '');
+
+            pushToConstruc(construc,
+                `M${sx(6.98)},${sy(30.92)}h${ax(35.47)}v${ay(35.38)}c0,${ay(9.79)} ${ax(-7.95)},${ay(17.74)} ${ax(-17.74)},${ay(17.74)}c${ax(-9.79)},0 ${ax(-17.74)},${ay(-7.95)} ${ax(-17.74)},${ay(-17.74)}V${sy(30.92)}Z`,
+            "none", "#0C2796", '');
+
+            construc.params.scale = 1;
+        }
     }
 
     if (classObj === 'energy') {
