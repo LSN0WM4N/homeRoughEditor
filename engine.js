@@ -108,9 +108,9 @@ document.addEventListener("keydown", function (event) {
     }
 
     if (event.key === 'Escape') {
-        console.log(`[${ mode }]`)
-        if (mode === 'edit_boundingBox_mode') {
+        if (mode === 'edit_boundingBox_mode' || mode === 'edit_door_mode') {
             mode = 'select_mode';
+            $('#boxLabels').empty('200');
             fonc_button('select_mode');
             $('#boxinfo').html('Selection mode');
             $('#objBoundingBox').hide(100);
@@ -118,6 +118,13 @@ document.addEventListener("keydown", function (event) {
             binder.graph.remove();
             binder = undefined;
         }
+    }
+
+    if (event.key === 'Delete') {
+      if (mode === 'edit_boundingBox_mode' || mode === 'edit_door_mode') {
+        $('#bboxTrash').click();
+        
+      }  
     }
   }
   // else {
@@ -225,6 +232,15 @@ function _MOUSEMOVE(event) {
         binder.update();
 
         if (hasCollision(binder, 20)) {
+            binder.x = prevX;
+            binder.y = prevY;
+            binder.angle = prevAngle;
+            binder.update();
+        }
+      }
+
+      if (binder.family === 'free') {
+        if (hasCollision(binder) || hasWallCollision(binder)) {
             binder.x = prevX;
             binder.y = prevY;
             binder.angle = prevAngle;
@@ -889,6 +905,7 @@ function _MOUSEMOVE(event) {
 
   if (mode == 'bind_mode') {
 
+    console.log("Minder type: ", binder.type ?? undefined);
     snap = calcul_snap(event, grid_snap);
 
     if (binder.type == 'node') {
@@ -1127,14 +1144,13 @@ function _MOUSEMOVE(event) {
         const prevX = binder.obj.x;
         const prevY = binder.obj.y;
 
-        // Mover temporalmente
         binder.x = snap.x;
         binder.y = snap.y;
         binder.obj.x = snap.x;
         binder.obj.y = snap.y;
         binder.obj.update(); 
 
-        if (hasCollision(binder.obj)) {
+        if (hasCollision(binder.obj) || hasWallCollision(binder.obj)) {
             binder.x = prevX;
             binder.y = prevY;
             binder.obj.x = prevX;
@@ -1142,6 +1158,7 @@ function _MOUSEMOVE(event) {
             binder.obj.update();
             cursor('not-allowed');
         } else {
+            cursor("move")
             binder.update();
         }
     }
@@ -1783,6 +1800,7 @@ function _MOUSEUP(event) {
           $('#objTools').show('200')
           $('#lin').css('cursor', 'default');
           $('#boxinfo').html('Config. the door/window');
+          editor.sortWallsItems(pivotElement);
           console.log('obj ??')
           document.getElementById('doorWindowWidth').setAttribute('min', binder.obj.params.resizeLimit.width.min);
           document.getElementById('doorWindowWidth').setAttribute('max', binder.obj.params.resizeLimit.width.max);

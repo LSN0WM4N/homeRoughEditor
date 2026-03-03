@@ -38,6 +38,8 @@ let originY_viewbox = 0;
 let zoom = 9;
 let factor = 1;
 
+let pivotElement = undefined;
+
 // **************************************************************************
 // *****************   LOAD / SAVE LOCALSTORAGE      ************************
 // **************************************************************************
@@ -670,9 +672,20 @@ document.getElementById('bboxWidth').addEventListener("input", function () {
     if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
-    console.log("Modifienf => ", objTarget);
+    const prevSize = objTarget.size;
+
     objTarget.size = (sliderValue / 100) * meter;
     objTarget.update();
+
+    if (
+        hasCollision(objTarget, objTarget.family !== 'free' ? 20 : 0) ||
+        (objTarget.family === 'free' && hasWallCollision(objTarget))
+    ) {
+        objTarget.size = prevSize;
+        objTarget.update();
+        return;
+    }
+
     binder.size = (sliderValue / 100) * meter;
     binder.update();
     document.getElementById("bboxWidthVal").textContent = sliderValue;
@@ -682,8 +695,19 @@ document.getElementById('bboxHeight').addEventListener("input", function () {
     if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
+    let prevThick = objTarget.thick;
     objTarget.thick = (sliderValue / 100) * meter;
     objTarget.update();
+
+    if (
+        hasCollision(objTarget, objTarget.family !== 'free' ? 20 : 0) ||
+        (objTarget.family === 'free' && hasWallCollision(objTarget))
+    ) {
+        objTarget.thick = prevThick;
+        objTarget.update();
+        return;
+    }
+
     binder.thick = (sliderValue / 100) * meter;
     binder.update();
     document.getElementById("bboxHeightVal").textContent = sliderValue;
@@ -704,6 +728,7 @@ document.getElementById('doorWindowWidth').addEventListener("input", function ()
     if (window.__READONLY_MODE__) return;
     let sliderValue = this.value;
     let objTarget = binder.obj;
+    let prevSize = objTarget.size;
     let wallBind = editor.rayCastingWalls(objTarget, WALLS);
     if (wallBind.length > 1) {
         wallBind = wallBind[wallBind.length - 1];
@@ -719,6 +744,18 @@ document.getElementById('doorWindowWidth').addEventListener("input", function ()
         binder.update();
         document.getElementById("doorWindowWidthVal").textContent = sliderValue;
     }
+
+    if (
+        hasCollision(objTarget, objTarget.family !== 'free' ? 20 : 0) ||
+        (objTarget.family === 'free' && hasWallCollision(objTarget))
+    ) {
+        objTarget.size = prevSize;
+        binder.size = prevSize;
+        objTarget.update();
+        binder.update();
+        return;
+    }
+
     inWallRib(wallBind);
 });
 
@@ -730,6 +767,12 @@ document.getElementById("objToolsHinge").addEventListener("click", function () {
         objTarget.hinge = 'reverse';
     } else objTarget.hinge = 'normal';
     objTarget.update();
+});
+
+document.getElementById("setAsPivotItem").addEventListener("click", function () {
+    if (window.__READONLY_MODE__) return;
+    pivotElement = binder.obj;
+    editor.sortWallsItems(pivotElement);
 });
 
 window.addEventListener("load", function () {
@@ -993,6 +1036,7 @@ let objTrashBtn = document.querySelectorAll(".objTrash");
 for (let k = 0; k < objTrashBtn.length; k++) {
     objTrashBtn[k].addEventListener("click", function () {
         $('#objTools').hide('100');
+        $('#boxLabels').empty('200');
         let obj = binder.obj;
         obj.graph.remove();
         OBJDATA.splice(OBJDATA.indexOf(obj), 1);
@@ -2293,12 +2337,34 @@ function pushToConstruc(construc, path, fill, stroke, strokeDashArray, opacity =
 
 const bboxOverlap = (a, b, m = 0) => !(a.right + m < b.left || a.left - m > b.right || a.bottom + m < b.top || a.top - m > b.bottom);
 function hasCollision(movingObj, margin = 0) {
-    console.log(OBJDATA);
-    for (var i = 0; i < OBJDATA.length; i++) {
-        var other = OBJDATA[i];
+    for (let i = 0; i < OBJDATA.length; i++) {
+        const other = OBJDATA[i];
         if (other.family !== movingObj.family || isObjectsEquals(other, movingObj)) 
             continue;
         if (bboxOverlap(movingObj.bbox, other.bbox, margin))
+            return true;
+    }
+    return false;
+}
+
+function hasWallCollision(movingObj, margin = 0) {
+    for (let i = 0; i < WALLS.length; i++) {
+        let wallCoords = {
+            left: WALLS[i].coords[0].x,
+            right: WALLS[i].coords[0].x,
+            top: WALLS[i].coords[0].y,
+            bottom: WALLS[i].coords[0].y,
+        };
+        for (let j = 0; j < 4; j ++) {
+            wallCoords = {
+                left: Math.min(wallCoords.left, WALLS[i].coords[j].x),
+                right: Math.max(wallCoords.right, WALLS[i].coords[j].x),
+                top: Math.min(wallCoords.top, WALLS[i].coords[j].y),
+                bottom: Math.max(wallCoords.bottom, WALLS[i].coords[j].y),
+            }
+        }
+
+        if (bboxOverlap(movingObj.bbox, wallCoords, margin))
             return true;
     }
     return false;

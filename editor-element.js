@@ -100,6 +100,7 @@ const htmlTemplate = `
     <g id="boxArea"></g>
     <g id="boxRib"></g>
     <g id="boxScale"></g>
+    <g id="boxLabels"></g>
     <g id="boxText"></g>
     <g id="boxDebug"></g>
   </svg>
@@ -213,6 +214,7 @@ const htmlTemplate = `
     <hr />
     <ul class="list-unstyled">
       <br /><br />
+      <li><button class="btn btn-light shadow fully" id="setAsPivotItem">Set as pivot element</button></li>
       <li><button class="btn btn-light shadow fully" id="objToolsHinge">Reverse hinges</button></li>
 
       <p>Width [<span id="doorWindowWidthScale"></span>] : <span id="doorWindowWidthVal"></span> cm</span></p>
@@ -221,7 +223,7 @@ const htmlTemplate = `
       <li><button class="btn btn-danger fully objTrash"><i class="fa fa-2x fa-trash" aria-hidden="true"></i></button>
       </li>
       <li><button class="btn btn-info" style="margin-top:100px"
-          onclick="fonc_button('select_mode');$('#boxinfo').html('Selection mode');$('#objTools').hide('100');$('#panel').show('200');binder.graph.remove();delete binder;rib();"><i
+          onclick="fonc_button('select_mode');$('#boxinfo').html('Selection mode');$('#objTools').hide('100');$('#boxLabels').empty('200');$('#panel').show('200');binder.graph.remove();delete binder;rib();"><i
             class="fa fa-2x fa-backward" aria-hidden="true"></i></button></li>
     </ul>
   </div>

@@ -24,6 +24,10 @@ This component can be dragged and attached exclusively to walls, following the w
 I added a new Misc > Toilet element as a free item.
 Unlike wall-constrained elements, this object can move freely across the floor plan. It also includes full support for deletion via its contextual menu.
 
+#### Leak
+
+Collisions are only working for xy-axis rectangles, so should be included a stronger collide system like Near Grid Collision System (NGCS) + Separating Axis Theorem (SAT).
+
 ## Additional Improvements & Personal Contributions
 
 #### Implemented keyboard shortcuts:
@@ -31,6 +35,8 @@ Unlike wall-constrained elements, this object can move freely across the floor p
 Ctrl + Z for Undo
 
 Ctrl + Y for Redo
+
+DELETE for delete selected items
 
 These were added to improve usability and align the editor with standard user experience expectations.
 

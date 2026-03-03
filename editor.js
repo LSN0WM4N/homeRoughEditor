@@ -939,7 +939,75 @@ var editor = {
       $('#boxScale').append(text);
 
     }
-  }
+  },
 
+  centerPoint: (box) => ({
+    x: (box.left + box.right) / 2,
+    y: (box.top + box.bottom) / 2,
+  }),
+
+  sortWallsItems: function (startWallObject = {}) {
+      if (window.__READONLY_MODE__ && window.__READONLY_MOUNTED__) {
+          console.warn(`[editor] Operation blocked by readonly method`);
+          return;
+      }
+      if (WALLS.length === 0 || OBJDATA.length === 0) 
+        return;
+
+      const extremePoints = {
+          left: Infinity,
+          right: -Infinity,
+          top: -Infinity,
+          bottom: Infinity,
+      };
+
+      for (let i = 0; i < WALLS.length; i++) {
+          for (let j = 0; j < 4; j++) {
+              extremePoints.left = Math.min(extremePoints.left, WALLS[i].coords[j].x);
+              extremePoints.right = Math.max(extremePoints.right, WALLS[i].coords[j].x);
+              extremePoints.top = Math.max(extremePoints.top, WALLS[i].coords[j].y);
+              extremePoints.bottom = Math.min(extremePoints.bottom, WALLS[i].coords[j].y);
+          }
+      }
+
+      const mp = this.centerPoint(extremePoints);
+
+      const sortedWalls = OBJDATA
+        .filter(obj => obj.family === 'inWall')
+        .sort((a, b) => {
+          const ca = this.centerPoint(a.bbox);
+          const cb = this.centerPoint(b.bbox);
+          return Math.atan2(cb.y - mp.y, cb.x - mp.x) - Math.atan2(ca.y - mp.y, ca.x - mp.x);
+        });
+
+      const startIndex = startWallObject
+          ? sortedWalls.findIndex(item => isObjectsEquals(item, startWallObject))
+          : 0;
+      const offset = startIndex === -1 ? 0 : startIndex;
+
+      $('#boxLabels').empty('200');
+
+      sortedWalls.forEach((obj, index) => {
+          const label = ((index - offset + sortedWalls.length) % sortedWalls.length) + 1;
+
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttributeNS(null, 'x', obj.x);
+          text.setAttributeNS(null, 'y', obj.y);
+          text.setAttributeNS(null, 'text-anchor', 'middle');
+          text.setAttributeNS(null, 'dominant-baseline', 'middle');
+          text.setAttributeNS(null, 'font-family', 'roboto');
+          text.setAttributeNS(null, 'font-size', '16px');
+          text.setAttributeNS(null, 'font-weight', 'bold');
+          text.setAttributeNS(null, 'fill', '#ffffff');
+          text.setAttributeNS(null, 'stroke', '#0C2796');
+          text.setAttributeNS(null, 'stroke-width', '3px');
+          text.setAttributeNS(null, 'paint-order', 'stroke');
+          text.textContent = label;
+
+          $('#boxLabels').append(text);
+      });
+
+      return sortedWalls; 
+  },
   // END EDITOR
 }
