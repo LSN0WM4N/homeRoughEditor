@@ -62,70 +62,116 @@ window.addEventListener('resize', function (event) {
 // ******************************        KEYPRESS on KEYBOARD          *********************************
 // *****************************************************************************************************
 document.addEventListener("keydown", function (event) {
-  if (mode != "text_mode") {
-    if (event.keyCode == '37') {
-      //LEFT
-      if (mode === 'select_mode')
-        zoom_maker('zoomleft', 100, 30);
-    }
+  if (mode == 'text_mode')
+    return;
 
-    if (event.keyCode == '38') {
-      //UP
-      if (mode === 'select_mode')
-        zoom_maker('zoomtop', 100, 30);
-    }
-    
-    if (event.keyCode == '39') {
-      //RIGHT
-      if (mode === 'select_mode')
-        zoom_maker('zoomright', 100, 30);
-    }
-    
-    if (event.keyCode == '40') {
-      //DOWN
-      if (mode === 'select_mode')
-        zoom_maker('zoombottom', 100, 30);
-    }
-    
-    if (event.keyCode == '107') {
-      //+
-      if (mode === 'select_mode')
-        zoom_maker('zoomin', 20, 50);
-    }
-    
-    if (event.keyCode == '109') {
-      //-
-      if (mode === 'select_mode')
-        zoom_maker('zoomout', 20, 50);
-    }
+  if (event.keyCode == '37') {
+    //LEFT
+    if (mode === 'select_mode')
+      zoom_maker('zoomleft', 100, 30);
+    return;
+  }
 
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+  if (event.keyCode == '38') {
+    //UP
+    if (mode === 'select_mode')
+      zoom_maker('zoomtop', 100, 30);
+    return;
+  }
+  
+  if (event.keyCode == '39') {
+    //RIGHT
+    if (mode === 'select_mode')
+      zoom_maker('zoomright', 100, 30);
+    return;
+  }
+  
+  if (event.keyCode == '40') {
+    //DOWN
+    if (mode === 'select_mode')
+      zoom_maker('zoombottom', 100, 30);
+    return;
+  }
+  
+  if (event.keyCode == '107') {
+    //+
+    if (mode === 'select_mode')
+      zoom_maker('zoomin', 20, 50);
+    return;
+  }
+  
+  if (event.keyCode == '109') {
+    //-
+    if (mode === 'select_mode')
+      zoom_maker('zoomout', 20, 50);
+    return;
+  }
+
+  if (event.key === 'Escape') {
+      if (mode === 'edit_boundingBox_mode' || mode === 'edit_door_mode' || mode === 'bulk_mode') {
+          mode = 'select_mode';
+          $('#boxLabels').empty('200');
+          fonc_button('select_mode');
+          $('#boxinfo').html('Selection mode');
+          $('#objBoundingBox').hide(100);
+          $('#bulkSelection').hide(100);
+          $('#panel').show(200);
+          binder.graph.remove();
+          bulkBuffer.length = 0;
+          binder = undefined;
+      }
+
+      return;
+  }
+
+  if (event.key === 'Delete') {
+    if (mode === 'edit_boundingBox_mode' || mode === 'edit_door_mode') {
+      $('#bboxTrash').click();
+    }  
+    return;
+  }
+
+  if (event.ctrlKey || event.metaKey) {
+    if (event.key.toLowerCase() === 'z') {
         $('#undo').click();
+        return;
     }
 
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+    if (event.key.toLowerCase() === 'y') {
         $('#redo').click();
+        return;
     }
 
-    if (event.key === 'Escape') {
-        if (mode === 'edit_boundingBox_mode' || mode === 'edit_door_mode') {
-            mode = 'select_mode';
-            $('#boxLabels').empty('200');
-            fonc_button('select_mode');
-            $('#boxinfo').html('Selection mode');
-            $('#objBoundingBox').hide(100);
-            $('#panel').show(200);
-            binder.graph.remove();
-            binder = undefined;
-        }
-    }
+    binder = undefined;
+    bulkBuffer = [];
 
-    if (event.key === 'Delete') {
-      if (mode === 'edit_boundingBox_mode' || mode === 'edit_door_mode') {
-        $('#bboxTrash').click();
-        
-      }  
-    }
+    mode = 'bulk_mode';
+    $('#panel').hide('200');
+    $("#bulkSelection").show('200');
+    $('#boxinfo').html("Bulk selection mode");
+    $("#boxbind").html("");
+  }
+  // else {
+  //   if (action == 1) {
+  //     binder.textContent = binder.textContent + event.key;
+  //     console.log(field.value);
+  //   }
+  // }
+});
+
+document.addEventListener("keyup", function (event) {
+  if (mode === "text_mode")
+    return; 
+
+  if (!(event.ctrlKey || event.metaKey) && mode === 'bulk_mode') {
+    mode = 'select_mode';
+    bulkBuffer.forEach(function(s) { s.highlight.remove(); });
+    bulkBuffer = [];
+    binder?.graph?.remove()
+    binder = undefined;
+    $('#panel').show('200');
+    $("#bulkSelection").hide("200");
+    $('#boxinfo').html("Selection mode");
   }
   // else {
   //   if (action == 1) {
@@ -142,8 +188,6 @@ document.addEventListener("keydown", function (event) {
 function _MOUSEMOVE(event) {
   event.preventDefault();
   $('.sub').hide(100);
-
-  console.log("MouseMove: ", mode);
 
   //**************************************************************************
   //********************   TEXTE   MODE **************************************
@@ -163,10 +207,10 @@ function _MOUSEMOVE(event) {
     snap = calcul_snap(event, grid_snap);
     if (typeof (binder) == 'undefined') {
       $('#object_list').hide(200);
-      console.log("MouseMove:", {
-        modeOption,
-        typeObj,
-      });
+      // console.log("MouseMove:", {
+      //   modeOption,
+      //   typeObj,
+      // });
       if (modeOption === 'simpleStair')
         binder = new editor.obj2D("free", "misc", "stair", snap, 0, 0, 60, "normal", 180, 15);
       else if (modeOption === 'toilet') {
@@ -240,12 +284,36 @@ function _MOUSEMOVE(event) {
       }
 
       if (binder.family === 'free') {
-        if (hasCollision(binder) || hasWallCollision(binder)) {
-            binder.x = prevX;
-            binder.y = prevY;
-            binder.angle = prevAngle;
-            binder.update();
-        }
+          binder.x = snap.x;
+          binder.y = snap.y;
+          binder.update();
+
+          if (hasCollision(binder) || hasWallCollision(binder)) {
+              binder.x = snap.x;
+              binder.y = prevY;
+              binder.update();
+
+              const canX = !hasCollision(binder) && !hasWallCollision(binder);
+
+              binder.x = prevX;
+              binder.y = snap.y;
+              binder.update();
+
+              const canY = !hasCollision(binder) && !hasWallCollision(binder);
+
+              if (canX && !canY) {
+                  binder.x = snap.x;
+                  binder.y = prevY;
+              } else if (canY && !canX) {
+                  binder.x = prevX;
+                  binder.y = snap.y;
+              }
+
+              binder.update();
+          }
+
+          binder.oldX = binder.x;
+          binder.oldY = binder.y;
       }
 
     }
@@ -516,6 +584,7 @@ function _MOUSEMOVE(event) {
         objTarget = OBJDATA[i];
       }
     }
+
     if (objTarget !== false) {
       if (typeof (binder) != 'undefined' && (binder.type == 'segment')) {
         binder.graph.remove();
@@ -905,7 +974,7 @@ function _MOUSEMOVE(event) {
 
   if (mode == 'bind_mode') {
 
-    console.log("Minder type: ", binder.type ?? undefined);
+    // console.log("Binder type: ", binder.type ?? undefined);
     snap = calcul_snap(event, grid_snap);
 
     if (binder.type == 'node') {
@@ -987,7 +1056,6 @@ function _MOUSEMOVE(event) {
           wallListObj.splice(k, 1);
         }
       }
-      // for (k in toClean)
       $('#boxRoom').empty();
       $('#boxSurface').empty();
       Rooms = qSVG.polygonize(WALLS);
@@ -1148,19 +1216,39 @@ function _MOUSEMOVE(event) {
         binder.y = snap.y;
         binder.obj.x = snap.x;
         binder.obj.y = snap.y;
-        binder.obj.update(); 
+        binder.obj.update();
 
         if (hasCollision(binder.obj) || hasWallCollision(binder.obj)) {
-            binder.x = prevX;
-            binder.y = prevY;
-            binder.obj.x = prevX;
+
+            binder.obj.x = snap.x;
             binder.obj.y = prevY;
             binder.obj.update();
-            cursor('not-allowed');
-        } else {
-            cursor("move")
-            binder.update();
+            const canX = !hasCollision(binder.obj) && !hasWallCollision(binder.obj);
+
+            binder.obj.x = prevX;
+            binder.obj.y = snap.y;
+            binder.obj.update();
+            const canY = !hasCollision(binder.obj) && !hasWallCollision(binder.obj);
+
+            if (canX && !canY) {
+                binder.obj.x = snap.x;
+                binder.obj.y = prevY;
+            } else if (canY && !canX) {
+                binder.obj.x = prevX;
+                binder.obj.y = snap.y;
+            } else {
+                binder.obj.x = prevX;
+                binder.obj.y = prevY;
+                cursor('not-allowed');
+            }
+
+            binder.obj.update();
+            binder.x = binder.obj.x;
+            binder.y = binder.obj.y;
         }
+
+        cursor('move');
+        binder.update();
     }
 
     // **********************************************************************
@@ -1311,6 +1399,20 @@ function _MOUSEDOWN(event) {
   if (mode == 'select_mode') {
     if (typeof (binder) != 'undefined' && (binder.type == 'segment' || binder.type == 'node' || binder.type == 'obj' || binder.type == 'boundingBox')) {
       mode = 'bind_mode';
+
+      // SAVING STARTING COORDS
+      if (binder.type == 'boundingBox' && binder.obj) 
+          binder._moveStart = { x: binder.obj.x, y: binder.obj.y };
+      if (binder.type == 'obj' && binder.obj) 
+          binder._moveStart = { x: binder.obj.x, y: binder.obj.y };
+      if (binder.type == 'segment') {
+          binder._moveStart = {
+              start: { x: binder.wall.start.x, y: binder.wall.start.y },
+              end: { x: binder.wall.end.x, y: binder.wall.end.y }
+          };
+      }
+      if (binder.type == 'node') 
+          binder._moveStart = { x: binder.data.x, y: binder.data.y };
 
       if (binder.type == 'obj') {
         action = 1;
@@ -1524,6 +1626,82 @@ function _MOUSEDOWN(event) {
       poy = snap.yMouse;
     }
   }
+
+
+  if (mode == 'bulk_mode') {
+    snap = calcul_snap(event, 'off');
+
+    var clickedObj = null;
+    for (var i = 0; i < OBJDATA.length; i++) {
+        if (qSVG.rayCasting(snap, OBJDATA[i].realBbox)) {
+            clickedObj = OBJDATA[i];
+            break;
+        }
+    }
+
+    var clickedWall = null;
+    if (wallBind = editor.rayCastingWalls(snap, WALLS)) {
+        if (wallBind.length > 1) wallBind = wallBind[wallBind.length - 1];
+        clickedWall = wallBind;
+    } else if (wallBind = editor.nearWall(snap, 5)) {
+        clickedWall = wallBind.wall;
+    }
+
+    if (clickedObj) {
+      var idx = bulkBuffer.findIndex(function(s) { return s.ref === clickedObj; });
+      if (idx !== -1) {
+          bulkBuffer[idx].highlight.remove();
+          bulkBuffer.splice(idx, 1);
+      } else {
+          var hl = qSVG.create('boxbind', 'rect', {
+              x: clickedObj.bbox.left - 5,
+              y: clickedObj.bbox.top - 5,
+              width: (clickedObj.bbox.right  - clickedObj.bbox.left) + 10,
+              height: (clickedObj.bbox.bottom - clickedObj.bbox.top) + 10,
+              rx: 4,
+              fill: 'rgba(208, 178, 178, 0.18)',
+              stroke: '#9fb2e2',
+              'stroke-width': 1.5,
+              'stroke-dasharray': '5,3',
+              'pointer-events': 'none'
+          });
+          bulkBuffer.push({ type: 'obj', ref: clickedObj, highlight: hl });
+      }
+
+    } else if (clickedWall) {
+      var idx = bulkBuffer.findIndex(function(s) { return s.ref === clickedWall; });
+      if (idx !== -1) {
+          bulkBuffer[idx].highlight.remove();
+          bulkBuffer.splice(idx, 1);
+      } else {
+          var hl = qSVG.create('boxbind', 'line', {
+              x1: clickedWall.start.x,
+              y1: clickedWall.start.y,
+              x2: clickedWall.end.x,
+              y2: clickedWall.end.y,
+              stroke: '#ff5050',
+              'stroke-width': clickedWall.thick + 4,
+              'stroke-opacity': 0.4,
+              'stroke-linecap': 'round',
+              'pointer-events': 'none'
+          });
+          bulkBuffer.push({ type: 'wall', ref: clickedWall, highlight: hl });
+      }
+    }
+    if (clickedObj || clickedWall) {
+      if (bulkBuffer.length === 0) {
+          $('#boxinfo').html('Bulk selection mode');
+          return;
+      }
+      var objs = bulkBuffer.filter(function(s) { return s.type === 'obj'; }).length;
+      var walls = bulkBuffer.filter(function(s) { return s.type === 'wall'; }).length;
+      var parts = [];
+      if (objs > 0) parts.push(objs + ' object' + (objs > 1 ? 's' : ''));
+      if (walls > 0) parts.push(walls + ' wall' + (walls > 1 ? 's' : ''));
+      $('#bulkCounter').html(parts.join(', '));
+    }
+  }
+
 }
 
 //******************************************************************************************************
@@ -1564,7 +1742,7 @@ function _MOUSEUP(event) {
   //**************************************************************************
   if (mode == 'object_mode') {
     binder.update();
-    console.log("Entering => ", binder);
+    // console.log("Entering => ", binder);
     if (hasCollision(binder, 20)) {
         $('#boxinfo').html('<span style="color:#ff4444">Cannot place object here — too close to another object</span>');
         binder.graph.remove();
@@ -1748,8 +1926,16 @@ function _MOUSEUP(event) {
     construc = 0; // CONSTRUC 0 TO FREE BINDER GROUP NODE WALL MOVING
     if (typeof (binder) != 'undefined') {
       fonc_button('select_mode');
-      if (binder.type == 'node') {
-
+      if (binder.type == 'node') {  
+        if (binder._moveStart) {
+          const el = $('#lin')[0];
+          el.dispatchEvent(new CustomEvent('wall:update:move', {
+            detail: {
+              start: binder._moveStart,
+              end: { x: binder.data.x, y: binder.data.y }
+            }
+          }));
+        }
       } // END BINDER NODE
 
       if (binder.type == 'segment') {
@@ -1757,6 +1943,25 @@ function _MOUSEUP(event) {
         var found = false;
         if (binder.wall.start == binder.before) {
           found = true;
+        }
+
+        if (binder._moveStart) {
+          const startMoved = 
+              binder._moveStart.start.x !== binder.wall.start.x ||
+              binder._moveStart.start.y !== binder.wall.start.y;
+          if (startMoved) {
+            const el = $('#lin')[0];
+            el.dispatchEvent(new CustomEvent('wall:update:move', {
+              bubbles: true, composed: true,
+              detail: {
+                start: binder._moveStart,
+                end: {
+                  start: { x: binder.wall.start.x, y: binder.wall.start.y },
+                  end: { x: binder.wall.end.x, y: binder.wall.end.y }
+                }
+              }
+            }));
+          }
         }
 
         if (found) {
@@ -1801,7 +2006,7 @@ function _MOUSEUP(event) {
           $('#lin').css('cursor', 'default');
           $('#boxinfo').html('Config. the door/window');
           editor.sortWallsItems(pivotElement);
-          console.log('obj ??')
+          // console.log('obj ??')
           document.getElementById('doorWindowWidth').setAttribute('min', binder.obj.params.resizeLimit.width.min);
           document.getElementById('doorWindowWidth').setAttribute('max', binder.obj.params.resizeLimit.width.max);
           document.getElementById('doorWindowWidthScale').textContent = binder.obj.params.resizeLimit.width.min + "-" + binder.obj.params.resizeLimit.width.max;
@@ -1811,6 +2016,17 @@ function _MOUSEUP(event) {
 
         }
         else {
+          if (binder._moveStart) {
+            const el = $('#lin')[0];
+            el.dispatchEvent(new CustomEvent('object:update:move', {
+              detail: {
+                family: binder.obj.family,
+                type:   binder.obj.type,
+                start:  binder._moveStart,
+                end:    { x: binder.obj.x, y: binder.obj.y }
+              }
+            }));
+          }
           mode = "select_mode";
           action = 0;
           binder.graph.remove();
@@ -1821,6 +2037,7 @@ function _MOUSEUP(event) {
       if (typeof (binder) != 'undefined' && binder.type == 'boundingBox') {
         var moveObj = Math.abs(binder.oldX - binder.x) + Math.abs(binder.oldY - binder.y);
         var objTarget = binder.obj;
+
         if (!objTarget.params.move) {
           // TO REMOVE MEASURE ON PLAN
           objTarget.graph.remove();
@@ -1833,11 +2050,11 @@ function _MOUSEUP(event) {
           if (!objTarget.params.rotate) $('#objBoundingBoxRotation').hide();
           else $('#objBoundingBoxRotation').show();
           $('#panel').hide(100);
-          console.log(objTarget.params.resizeLimit.width.min)
+          // console.log(objTarget.params.resizeLimit.width.min)
           $('#objBoundingBox').show('200')
           $('#lin').css('cursor', 'default');
           $('#boxinfo').html('Modify the object');
-          console.log(objTarget)
+          // console.log(objTarget)
           document.getElementById('bboxWidth').setAttribute('min', objTarget.params.resizeLimit.width.min);
           document.getElementById('bboxWidth').setAttribute('max', objTarget.params.resizeLimit.width.max);
           document.getElementById('bboxWidthScale').textContent = objTarget.params.resizeLimit.width.min + "-" + objTarget.params.resizeLimit.height.max;
@@ -1858,6 +2075,17 @@ function _MOUSEUP(event) {
           mode = 'edit_boundingBox_mode';
         }
         else {
+          if (binder._moveStart) {
+            const el = $('#lin')[0];
+            el.dispatchEvent(new CustomEvent('object:update:move', {
+              detail: {
+                family: objTarget.family,
+                type: objTarget.type,
+                start: binder._moveStart,
+                end: { x: objTarget.x, y: objTarget.y }
+              }
+            }));
+          }
           mode = "select_mode";
           action = 0;
           binder.graph.remove();

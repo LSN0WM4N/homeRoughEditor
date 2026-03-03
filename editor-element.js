@@ -228,6 +228,20 @@ const htmlTemplate = `
     </ul>
   </div>
 
+  <div id="bulkSelection" class="leftBox">
+    <h2>Multiple items selection</h2>
+    <hr />
+    <ul class="list-unstyled">
+      <br /><br />
+      <li><p>Selected items: </p><span id="bulkCounter"></span></li>
+
+      <li><button class="btn btn-danger fully" id="bulkDeleteBtn"><i class="fa fa-2x fa-trash" aria-hidden="true"></i></button></li>
+      <li><button class="btn btn-info" style="margin-top:100px"
+          onclick="fonc_button('select_mode');$('#boxinfo').html('Selection mode');$('#bulkSelection').hide('100');$('#boxLabels').empty('200');$('#panel').show('200');binder.graph.remove();delete binder;rib();"><i
+            class="fa fa-2x fa-backward" aria-hidden="true"></i></button></li>
+    </ul>
+  </div>
+
   <div id="roomTools" class="leftBox">
     <span style="color:#08d">Home Rough Editor</span> estimated a surface of :<br /><b><span class="size"></span></b>
     <br /><br />
@@ -622,9 +636,59 @@ const htmlTemplate = `
   </div>
 `;
 
+const EVENTS = [
+  'history:init',
+  'history:undo',
+  'history:redo',
+  'floorplan:save',
+  'wall:delete',
+  'wall:delete:bulk',
+  'wall:update:move',
+  'wall:update:width',
+  'object:delete',
+  'object:delete:bulk',
+  'object:update:move',
+  'object:update:width',
+  'object:update:height',
+  'object:update:rotate',
+  'object:inWall:setPivot',
+  'room:applySurface',
+  'room:tools:reset',
+  'room:update:color',
+  'show:rib',
+  'show:area',
+  'show:layerRoom',
+  'show:layerEnergy',
+  'mode:select',
+  'mode:line',
+  'mode:partition',
+  'mode:rect',
+  'mode:door',
+  'mode:window',
+  'mode:object',
+  'mode:misc',
+  'mode:room',
+  'mode:distance',
+  'mode:node',
+  'mode:text',
+  'mode:grid',
+  'zoom:in',
+  'zoom:out',
+  'zoom:zoomin',
+  'zoom:zoomout',
+  'zoom:zoomreset',
+  'zoom:zoomleft',
+  'zoom:zoomright',
+  'zoom:zoomtop',
+  'zoom:zoombottom',
+  'text:color',
+];
+
 class EditorElement extends HTMLElement {
     constructor() {
         super();
+
+        this._EVENTS = EVENTS; 
     }
 
     async connectedCallback() {
@@ -646,7 +710,7 @@ class EditorElement extends HTMLElement {
         await this._loadScript("./editor.js");
         await this._loadScript("./engine.js");
 
-        window.addEventListener('history:init', () => {
+        this.querySelector('#lin').addEventListener('', () => {
             if (mode !== 'readonly')
                 return;
             Object.defineProperty(window, '__READONLY_MOUNTED__', {
@@ -656,8 +720,17 @@ class EditorElement extends HTMLElement {
                 enumerable: false,
             });
         });
+
+        this._bindEventRelay();
     }
-    disconnectedCallback() { }
+    disconnectedCallback() { 
+      this._unbindEventRelay();
+    }
+
+    // PRIVATES
+    _render() {
+        this.innerHTML = htmlTemplate;
+    }
 
     _loadScript(src) {
         return new Promise((resolve) => {
@@ -668,9 +741,40 @@ class EditorElement extends HTMLElement {
         });
     }
 
-    // PRIVATES
-    _render() {
-        this.innerHTML = htmlTemplate;
+    _bindEventRelay() {
+        const lin = document.querySelector('#lin');
+        if (!lin) {
+            console.warn('[EditorElement] #lin not found, event relay not bound');
+            return;
+        }
+
+        this._relayHandlers = {};
+
+        this._EVENTS.forEach(eventName => {
+            const handler = (e) => {
+                this.dispatchEvent(new CustomEvent(eventName, {
+                    bubbles: true,
+                    composed: true,
+                    detail: e.detail || {}
+                }));
+            };
+            this._relayHandlers[eventName] = handler;
+            lin.addEventListener(eventName, handler);
+        });
+    }
+
+    _unbindEventRelay() {
+        const lin = document.querySelector('#lin');
+        if (!lin || !this._relayHandlers) 
+          return;
+
+        this._EVENTS_TO_RELAY.forEach(eventName => {
+            const handler = this._relayHandlers[eventName];
+            if (handler) 
+              lin.removeEventListener(eventName, handler);
+        });
+
+        this._relayHandlers = null;
     }
 }
 

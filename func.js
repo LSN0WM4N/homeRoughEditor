@@ -3,6 +3,8 @@ let WALLS = [];
 let OBJDATA = [];
 let ROOM = [];
 let HISTORY = [];
+
+let bulkBuffer = [];
 let wallSize = 20;
 let partitionSize = 8;
 let drag = 'off';
@@ -13,6 +15,7 @@ let Rcirclebinder = 8;
 let mode = 'select_mode';
 let modeOption;
 let linElement = $('#lin');
+let linElementNotifier = $('#lin')[0];
 let taille_w = linElement.width();
 let taille_h = linElement.height();
 let offset = linElement.offset();
@@ -54,7 +57,7 @@ function initHistory(boot = false) {
         load(historyTemp.length - 1, "boot");
         save("boot");
         // Dispatch an event to let know that the plane is loaded
-        dispatchEvent(new CustomEvent('history:init', { bubbles: true, composed: true }));
+        linElementNotifier.dispatchEvent(new CustomEvent('history:init'));
     }
     if (boot === "newSquare") {
         if (localStorage.getItem('history')) localStorage.removeItem('history');
@@ -243,6 +246,7 @@ function initHistory(boot = false) {
         localStorage.setItem('history', JSON.stringify(HISTORY));
         load(0);
         save();
+        linElementNotifier.dispatchEvent(new CustomEvent('history:init'));
     }
 }
 
@@ -255,6 +259,8 @@ document.getElementById('redo').addEventListener("click", function () {
         if (HISTORY.index === HISTORY.length) {
             $('#redo').addClass('disabled');
         }
+
+        linElementNotifier.dispatchEvent(new CustomEvent('history:redo'));
     }
 });
 
@@ -267,6 +273,7 @@ document.getElementById('undo').addEventListener("click", function () {
             load(HISTORY.index - 1);
             $('#redo').removeClass('disabled');
         }
+        linElementNotifier.dispatchEvent(new CustomEvent('history:undo'));
     }
     if (HISTORY.index === 1) $('#undo').addClass('disabled');
 });
@@ -613,9 +620,6 @@ document.getElementById('report_mode').addEventListener("click", function () {
 
     document.getElementById('reportRooms').innerHTML = reportRoom;
     $('#reportRooms').show(1000);
-
-
-
 });
 
 document.getElementById('wallWidth').addEventListener("input", function () {
@@ -631,17 +635,98 @@ document.getElementById('wallWidth').addEventListener("input", function () {
     }
     rib();
     document.getElementById("wallWidthVal").textContent = sliderValue;
+    linElementNotifier.dispatchEvent(new CustomEvent('wall:update:width', { 
+        detail: { 
+            coords: binder.coords, 
+            newWidth: sliderValue 
+        } 
+    }));
+});
+
+document.getElementById('bulkDeleteBtn').addEventListener('click', function() {
+    var deletedObjs = bulkBuffer
+        .filter(function(s) { return s.type === 'obj'; })
+        .map(function(s) {
+            return {
+                index: OBJDATA.indexOf(s.ref),
+                family: s.ref.family,
+                type: s.ref.type,
+                x: s.ref.x,
+                y: s.ref.y,
+            };
+        });
+
+    var deletedWalls = bulkBuffer
+        .filter(function(s) { return s.type === 'wall'; })
+        .map(function(s) {
+            return {
+                index: WALLS.indexOf(s.ref),
+                start: { x: s.ref.start.x, y: s.ref.start.y },
+                end: { x: s.ref.end.x, y: s.ref.end.y },
+                thick: s.ref.thick,
+            };
+        });
+
+    bulkBuffer
+        .filter(function(s) { return s.type === 'obj'; })
+        .forEach(function(s) {
+            s.highlight.remove();
+            s.ref.graph.remove();
+            var idx = OBJDATA.indexOf(s.ref);
+            if (idx !== -1) OBJDATA.splice(idx, 1);
+        });
+
+    bulkBuffer
+        .filter(function(s) { return s.type === 'wall'; })
+        .forEach(function(s) {
+            s.highlight.remove();
+            var wall = s.ref;
+
+            if (wall.parent) {
+                if (wall.parent.child && wall.parent.child === wall) wall.parent.child = null;
+                if (wall.parent.parent && wall.parent.parent === wall) wall.parent.parent = null;
+            }
+            if (wall.child) {
+                if (wall.child.parent && wall.child.parent === wall) wall.child.parent = null;
+                if (wall.child.child && wall.child.child === wall) wall.child.child = null;
+            }
+
+            var objsOnWall = editor.objFromWall(wall);
+            objsOnWall.forEach(function(o) {
+                o.graph.remove();
+                var oi = OBJDATA.indexOf(o);
+                if (oi !== -1) OBJDATA.splice(oi, 1);
+            });
+            var wi = WALLS.indexOf(wall);
+            if (wi !== -1) WALLS.splice(wi, 1);
+        });
+
+    bulkBuffer = [];
+
+    linElementNotifier.dispatchEvent(new CustomEvent('object:delete:bulk', { detail: { objects: deletedObjs }}));
+    linElementNotifier.dispatchEvent(new CustomEvent('wall:delete:bulk', { detail: { walls: deletedWalls }}));
+
+    editor.architect(WALLS);
+    $('#boxRoom').empty();
+    $('#boxSurface').empty();
+    Rooms = qSVG.polygonize(WALLS);
+    editor.roomMaker(Rooms);
+    $('#boxinfo').html('Selection mode');
+    save();
 });
 
 document.getElementById("bboxTrash").addEventListener("click", function () {
     if (window.__READONLY_MODE__) return;
     binder.obj.graph.remove();
     binder.graph.remove();
-    OBJDATA.splice(OBJDATA.indexOf(binder.obj), 1);
+
+    const deletedId = OBJDATA.indexOf(binder.obj)
+    OBJDATA.splice(deletedId, 1);
     $('#objBoundingBox').hide(100);
     $('#panel').show(200);
     fonc_button('select_mode');
     $('#boxinfo').html('Deleted object');
+    linElementNotifier.dispatchEvent(new CustomEvent('object:delete', { detail: { id: deletedId }}));
     binder = undefined;
     rib();
 });
@@ -689,6 +774,15 @@ document.getElementById('bboxWidth').addEventListener("input", function () {
     binder.size = (sliderValue / 100) * meter;
     binder.update();
     document.getElementById("bboxWidthVal").textContent = sliderValue;
+
+    linElementNotifier.dispatchEvent(new CustomEvent('object:update:width', { 
+        detail: {
+            family: objTarget.family,
+            type: objTarget.type,
+            boundingBox: objTarget.bbox,
+            newWidth: objTarget.size,
+        }
+     }));
 });
 
 document.getElementById('bboxHeight').addEventListener("input", function () {
@@ -711,6 +805,15 @@ document.getElementById('bboxHeight').addEventListener("input", function () {
     binder.thick = (sliderValue / 100) * meter;
     binder.update();
     document.getElementById("bboxHeightVal").textContent = sliderValue;
+
+    linElementNotifier.dispatchEvent(new CustomEvent('object:update:height', { 
+        detail: {
+            family: objTarget.family,
+            type: objTarget.type,
+            boundingBox: objTarget.bbox,
+            newHeight: objTarget.thick,
+        }
+     }));
 });
 
 document.getElementById('bboxRotation').addEventListener("input", function () {
@@ -722,6 +825,15 @@ document.getElementById('bboxRotation').addEventListener("input", function () {
     binder.angle = sliderValue;
     binder.update();
     document.getElementById("bboxRotationVal").textContent = sliderValue;
+
+    linElementNotifier.dispatchEvent(new CustomEvent('object:update:rotate', { 
+        detail: {
+            family: objTarget.family,
+            type: objTarget.type,
+            boundingBox: objTarget.bbox,
+            newAngle: objTarget.angle,
+        }
+     }));
 });
 
 document.getElementById('doorWindowWidth').addEventListener("input", function () {
@@ -756,6 +868,15 @@ document.getElementById('doorWindowWidth').addEventListener("input", function ()
         return;
     }
 
+    linElementNotifier.dispatchEvent(new CustomEvent('object:update:width', { 
+        detail: {
+            family: objTarget.family,
+            type: objTarget.type,
+            boundingBox: objTarget.bbox,
+            newWidth: objTarget.size,
+        }
+     }));
+
     inWallRib(wallBind);
 });
 
@@ -767,12 +888,28 @@ document.getElementById("objToolsHinge").addEventListener("click", function () {
         objTarget.hinge = 'reverse';
     } else objTarget.hinge = 'normal';
     objTarget.update();
+
+    linElementNotifier.dispatchEvent(new CustomEvent('object:update:width', { 
+        detail: {
+            family: objTarget.family,
+            type: objTarget.type,
+            boundingBox: objTarget.bbox,
+            newHinge: objTarget.hinge,
+        }
+     }));
 });
 
 document.getElementById("setAsPivotItem").addEventListener("click", function () {
     if (window.__READONLY_MODE__) return;
     pivotElement = binder.obj;
     editor.sortWallsItems(pivotElement);
+
+    linElementNotifier.dispatchEvent(new CustomEvent('object:inWall:setPivot', { 
+        detail: {
+            type: pivotElement.type,
+            boundingBox: pivotElement.bbox,
+        }
+    }));
 });
 
 window.addEventListener("load", function () {
@@ -854,7 +991,7 @@ if (!Array.prototype.includes) {
 }
 
 function isObjectsEquals(a, b, message = false) {
-    if (message) console.log(message)
+    // if (message) console.log(message)
     let isOK = true;
     for (let prop in a) {
         if (a[prop] !== b[prop]) {
@@ -890,9 +1027,12 @@ linElement.mousewheel(throttle(function (event) {
     event.preventDefault();
     if (event.deltaY > 0) {
         zoom_maker('zoomin', 200);
+        linElementNotifier.dispatchEvent(new CustomEvent('zoom:in'));
     } else {
         zoom_maker('zoomout', 200);
+        linElementNotifier.dispatchEvent(new CustomEvent('zoom:out'));
     }
+
 }, 100));
 
 document.getElementById("showRib").addEventListener("click", function () {
@@ -905,29 +1045,39 @@ document.getElementById("showRib").addEventListener("click", function () {
         $('#boxRib').hide(100);
         showRib = false;
     }
+    linElementNotifier.dispatchEvent(new CustomEvent('show:rib', { detail: { showRib } }));
+
 });
 
 document.getElementById("showArea").addEventListener("click", function () {
     if (document.getElementById("showArea").checked) {
         $('#boxArea').show(200);
+        linElementNotifier.dispatchEvent(new CustomEvent('show:area', { detail: { showArea: true } }));
     } else {
         $('#boxArea').hide(100);
+        linElementNotifier.dispatchEvent(new CustomEvent('show:area', { detail: { showArea: false } }));
     }
+
+    
 });
 
 document.getElementById("showLayerRoom").addEventListener("click", function () {
     if (document.getElementById("showLayerRoom").checked) {
         $('#boxRoom').show(200);
+        linElementNotifier.dispatchEvent(new CustomEvent('show:layerRoom', { detail: { showLayerRoom: true } }));
     } else {
         $('#boxRoom').hide(100);
+        linElementNotifier.dispatchEvent(new CustomEvent('show:layerRoom', { detail: { showLayerRoom: false } }));
     }
 });
 
 document.getElementById("showLayerEnergy").addEventListener("click", function () {
     if (document.getElementById("showLayerEnergy").checked) {
         $('#boxEnergy').show(200);
+        linElementNotifier.dispatchEvent(new CustomEvent('show:layerEnergy', { detail: { showLayerEnergy: true } }));
     } else {
         $('#boxEnergy').hide(100);
+        linElementNotifier.dispatchEvent(new CustomEvent('show:layerEnergy', { detail: { showLayerEnergy: false } }));
     }
 });
 
@@ -971,6 +1121,14 @@ document.getElementById("applySurface").addEventListener("click", function () {
     if (action != 'sub' && data === 'hatch') {
         ROOM[id].color = 'gradientNeutral';
     }
+
+    linElementNotifier.dispatchEvent(new CustomEvent('room:applySurface', { 
+        detail: { 
+            id: id,
+            room: ROOM[id], 
+        } 
+    }));
+
     $('#boxRoom').empty();
     $('#boxSurface').empty();
     editor.roomMaker(Rooms);
@@ -984,6 +1142,8 @@ document.getElementById("resetRoomTools").addEventListener("click", function () 
     $('#panel').show(200);
     binder.remove();
     binder = undefined;
+
+    linElementNotifier.dispatchEvent(new CustomEvent('room:tools:reset'));
     $('#boxinfo').html('Updated room');
     fonc_button('select_mode');
 
@@ -998,11 +1158,15 @@ document.getElementById("wallTrash").addEventListener("click", function () {
             WALLS[k].parent = null;
         }
     }
-    WALLS.splice(WALLS.indexOf(wall), 1);
+    const deletedId = WALLS.indexOf(wall);
+    WALLS.splice(deletedId, 1);
     $('#wallTools').hide(100);
     wall.graph.remove();
     binder.graph.remove();
     editor.architect(WALLS);
+
+    linElementNotifier.dispatchEvent(new CustomEvent('wall:delete', { detail: { id: deletedId } }));
+
     rib();
     mode = "select_mode";
     $('#panel').show(200);
@@ -1012,6 +1176,7 @@ let textEditorColorBtn = document.querySelectorAll('.textEditorColor');
 for (let k = 0; k < textEditorColorBtn.length; k++) {
     textEditorColorBtn[k].addEventListener('click', function () {
         document.getElementById('labelBox').style.color = this.style.color;
+        linElementNotifier.dispatchEvent(new CustomEvent('text:color', { detail: { color: this.style.color } }));
     });
 }
 
@@ -1020,6 +1185,7 @@ for (let k = 0; k < zoomBtn.length; k++) {
     zoomBtn[k].addEventListener("click", function () {
         let lens = this.getAttribute('data-zoom');
         zoom_maker(lens, 200, 50);
+        linElementNotifier.dispatchEvent(new CustomEvent(`zoom:${lens}`));
     })
 }
 
@@ -1029,6 +1195,9 @@ for (let k = 0; k < roomColorBtn.length; k++) {
         let data = this.getAttribute('data-type');
         $('#roomBackground').val(data);
         binder.attr({ 'fill': 'url(#' + data + ')' });
+        linElementNotifier.dispatchEvent(new CustomEvent('room:update:color', { 
+            detail: { room: binder, color: data } 
+        }));   
     });
 }
 
@@ -1036,6 +1205,7 @@ let objTrashBtn = document.querySelectorAll(".objTrash");
 for (let k = 0; k < objTrashBtn.length; k++) {
     objTrashBtn[k].addEventListener("click", function () {
         $('#objTools').hide('100');
+        $('#bulkSelection').hide('100');
         $('#boxLabels').empty('200');
         let obj = binder.obj;
         obj.graph.remove();
@@ -1043,7 +1213,10 @@ for (let k = 0; k < objTrashBtn.length; k++) {
         fonc_button('select_mode');
         $('#boxinfo').html('Selection mode');
         $('#panel').show('200');
+
+
         binder.graph.remove();
+        bulkBuffer.length = 0;
         binder = undefined;
         rib();
         $('#panel').show('300');
@@ -1062,7 +1235,7 @@ for (let k = 0; k < dropdownMenu.length; k++) {
 
 // TRY MATRIX CALC FOR BBOX REAL COORDS WITH TRAS + ROT.
 function matrixCalc(el, message = false) {
-    if (message) console.log("matrixCalc called by -> " + message);
+    // if (message) console.log("matrixCalc called by -> " + message);
     let m = el.getCTM();
     let bb = el.getBBox();
     let tpts = [
@@ -1084,9 +1257,9 @@ function realBboxShow(coords) {
 }
 
 function limitObj(equation, size, coords, message = false) {
-    if (message) {
-        console.log(message);
-    }
+    // if (message) {
+    //     console.log(message);
+    // }
     let Px = coords.x;
     let Py = coords.y;
     let Aq = equation.A;
@@ -1169,7 +1342,7 @@ let tactile = false;
 function calcul_snap(event, state) {
     if (event.touches) {
         let touches = event.changedTouches;
-        console.log("toto")
+        // console.log("toto")
         eX = touches[0].pageX;
         eY = touches[0].pageY;
         tactile = true;
@@ -1340,9 +1513,9 @@ function showJunction() {
     }
 }
 
-$('.visu').mouseover(function () {
-    console.log(this.id)
-});
+// $('.visu').mouseover(function () {
+//     console.log(this.id)
+// });
 
 let sizeText = [];
 let showAllSizeStatus = 0;
@@ -1727,6 +1900,8 @@ $('#distance_mode').click(function () {
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Add a measurement');
     fonc_button('distance_mode');
+
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:distance'));
 });
 
 $('#room_mode').click(function () {
@@ -1734,6 +1909,7 @@ $('#room_mode').click(function () {
     linElement.css('cursor', 'pointer');
     $('#boxinfo').html('Config. of rooms');
     fonc_button('room_mode');
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:room'));
 });
 
 $('#select_mode').click(function () {
@@ -1745,6 +1921,7 @@ $('#select_mode').click(function () {
     }
 
     fonc_button('select_mode');
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:select'));
 });
 
 $('#line_mode').click(function () {
@@ -1758,6 +1935,7 @@ $('#line_mode').click(function () {
     // pox = snap.x;
     // poy = snap.y;
     fonc_button('line_mode');
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:line'));
 });
 
 $('#partition_mode').click(function () {
@@ -1766,6 +1944,7 @@ $('#partition_mode').click(function () {
     $('#boxinfo').html('Creation of thin wall(s)');
     multi = 0;
     fonc_button('partition_mode');
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:partition'));
 });
 
 $('#rect_mode').click(function () {
@@ -1773,6 +1952,7 @@ $('#rect_mode').click(function () {
     linElement.css('cursor', 'crosshair');
     $('#boxinfo').html('Room(s) creation');
     fonc_button('rect_mode');
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:rect'));
 });
 
 $('.door').click(function () {
@@ -1782,6 +1962,7 @@ $('.door').click(function () {
     $('#door_list').hide(200);
     $('#misc_item').hide(200);
     fonc_button('door_mode', this.id);
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:door'));
 });
 
 $('.window').click(function () {
@@ -1792,6 +1973,7 @@ $('.window').click(function () {
     $('#misc_item').hide(200);
     $('#window_list').hide(200);
     fonc_button('door_mode', this.id);
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:window'));
 });
 
 $('.object').click(function () {
@@ -1800,6 +1982,7 @@ $('.object').click(function () {
     $('#boxinfo').html('Add an object');
     $('#misc_item').hide(200);
     fonc_button('object_mode', this.id);
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:object'));
 });
 
 $('#misc_items').click(function () {
@@ -1809,6 +1992,7 @@ $('#misc_items').click(function () {
     $('#door_list').hide(200);
     $('#window_list').hide(200);
     // fonc_button('object_mode', this.id);
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:misc'));
 });
 
 $('#node_mode').click(function () {
@@ -1817,6 +2001,7 @@ $('#node_mode').click(function () {
         .html('Cut a wall<br/><span style=\"font-size:0.7em\">Warning : Cutting the wall of a room can cancel its ' +
             'configuration</span>');
     fonc_button('node_mode');
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:node'));
 });
 
 $('#text_mode').click(function () {
@@ -1824,6 +2009,7 @@ $('#text_mode').click(function () {
     $('#boxinfo').html('Add text<br/><span style=\"font-size:0.7em\">Place the cursor to the desired location, then ' +
         'type your text.</span>');
     fonc_button('text_mode');
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:text'));
 });
 
 $('#grid_mode').click(function () {
@@ -1843,6 +2029,7 @@ $('#grid_mode').click(function () {
         $('#grid_mode').html('GRID ON <i class="fa fa-th" aria-hidden="true"></i>');
         $('#boxgrid').css('opacity', '1');
     }
+    linElementNotifier.dispatchEvent(new CustomEvent('mode:grid'));
 });
 
 //  RETURN PATH(s) ARRAY FOR OBJECT + PROPERTY params => bindBox (false = open sideTool), move, resize, rotate
