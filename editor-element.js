@@ -1,7 +1,7 @@
 import { combinedScripts } from './_combined_scripts.js';
 
 const htmlTemplate = `
-  <header>Make by Home Rough Editor Ver.0.95</header>
+  <header>Make by Home Rough Editor Ver.0.96</header>
 
   <svg id="lin" viewBox="0 0 1100 700" preserveAspectRatio="xMidYMin slice" xmlns="http://www.w3.org/2000/svg"
     style="z-index:2;margin:0;padding:0;width:100vw;height:100vh;position:absolute;top:0;left:0;right:0;bottom:0">
@@ -517,7 +517,7 @@ const htmlTemplate = `
       <div class="modal-content">
         <div class="modal-header">
 
-          <h4 class="modal-title" id="myModalLabel">Welcome Home Rough Editor v0.95</h4>
+          <h4 class="modal-title" id="myModalLabel">Welcome Home Rough Editor v0.96</h4>
         </div>
         <div class="modal-body m-2">
           <div id="recover">

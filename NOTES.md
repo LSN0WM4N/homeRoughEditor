@@ -1,4 +1,4 @@
-# homeRoughEditor v0.95 (SN0WM4N)
+# homeRoughEditor v0.96 (SN0WM4N)
 
 ## Web Component
 

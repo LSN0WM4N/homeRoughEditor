@@ -1,4 +1,4 @@
-# homeRoughEditor v0.95 (SN0WM4N)
+# homeRoughEditor v0.96s (SN0WM4N)
 
 > See NOTES.MD for a full description of the development process.
 
