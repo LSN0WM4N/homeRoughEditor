@@ -172,6 +172,7 @@ document.addEventListener("keyup", function (event) {
     $('#panel').show('200');
     $("#bulkSelection").hide("200");
     $('#boxinfo').html("Selection mode");
+    $('#boxLabels').html('');
   }
   // else {
   //   if (action == 1) {
@@ -275,7 +276,7 @@ function _MOUSEMOVE(event) {
         binder.angle = angleWall;
         binder.update();
 
-        if (hasCollision(binder, 20)) {
+        if (hasCollision(binder, 12)) {
             binder.x = prevX;
             binder.y = prevY;
             binder.angle = prevAngle;
@@ -289,27 +290,25 @@ function _MOUSEMOVE(event) {
           binder.update();
 
           if (hasCollision(binder) || hasWallCollision(binder)) {
-              binder.x = snap.x;
-              binder.y = prevY;
-              binder.update();
+            const bestX = tryAxis(prevX, snap.x, prevY, true);
+            const bestY = tryAxis(prevY, snap.y, prevX, false);
 
-              const canX = !hasCollision(binder) && !hasWallCollision(binder);
+            binder.x = bestX;
+            binder.y = bestY;
+            binder.update();
 
-              binder.x = prevX;
-              binder.y = snap.y;
-              binder.update();
-
-              const canY = !hasCollision(binder) && !hasWallCollision(binder);
-
-              if (canX && !canY) {
-                  binder.x = snap.x;
-                  binder.y = prevY;
-              } else if (canY && !canX) {
-                  binder.x = prevX;
-                  binder.y = snap.y;
+            if (hasCollision(binder) || hasWallCollision(binder)) {
+              const distX = Math.abs(bestX - prevX);
+              const distY = Math.abs(bestY - prevY);
+              if (distX >= distY) {
+                binder.x = bestX;
+                binder.y = prevY;
+              } else {
+                binder.x = prevX;
+                binder.y = bestY;
               }
-
               binder.update();
+            }
           }
 
           binder.oldX = binder.x;
@@ -496,7 +495,7 @@ function _MOUSEMOVE(event) {
             binder.update();
           }
 
-          if (hasCollision(binder, 20)) {
+          if (hasCollision(binder, 12)) {
             binder.x = prevX;
             binder.y = prevY;
             binder.angle = prevAngle;
@@ -1209,43 +1208,52 @@ function _MOUSEMOVE(event) {
     // **********************************************************************
     // binder.obj.params.move ---> FOR MEASURE DONT MOVE
     if (binder.type == 'boundingBox' && action == 1 && binder.obj.params.move) {
-        const prevX = binder.obj.x;
-        const prevY = binder.obj.y;
+        const targetObj = binder.obj;
+
+        const prevX = targetObj.x;
+        const prevY = targetObj.y;
 
         binder.x = snap.x;
         binder.y = snap.y;
-        binder.obj.x = snap.x;
-        binder.obj.y = snap.y;
-        binder.obj.update();
+        targetObj.x = snap.x;
+        targetObj.y = snap.y;
+        targetObj.update();
 
         if (hasCollision(binder.obj) || hasWallCollision(binder.obj)) {
+          const bestX = tryAxis(prevX, snap.x, prevY, true, binder.obj);
+          const bestY = tryAxis(prevY, snap.y, prevX, false, binder.obj);
 
-            binder.obj.x = snap.x;
-            binder.obj.y = prevY;
-            binder.obj.update();
-            const canX = !hasCollision(binder.obj) && !hasWallCollision(binder.obj);
+          console.log("values", bestX, prevX, snap.x);
 
-            binder.obj.x = prevX;
-            binder.obj.y = snap.y;
-            binder.obj.update();
-            const canY = !hasCollision(binder.obj) && !hasWallCollision(binder.obj);
+          binder.x = bestX;
+          binder.y = bestY;
+          targetObj.x = bestX;
+          targetObj.y = bestY;
+          binder.update();
+          targetObj.update();
 
-            if (canX && !canY) {
-                binder.obj.x = snap.x;
-                binder.obj.y = prevY;
-            } else if (canY && !canX) {
-                binder.obj.x = prevX;
-                binder.obj.y = snap.y;
+          if (hasCollision(binder.obj) || hasWallCollision(binder.obj)) {
+            console.log("Enters here");
+            const distX = Math.abs(bestX - prevX);
+            const distY = Math.abs(bestY - prevY);
+            if (distX >= distY) {
+              binder.x = bestX;
+              binder.y = prevY;
+              targetObj.x = bestX;
+              targetObj.y = prevY;
             } else {
-                binder.obj.x = prevX;
-                binder.obj.y = prevY;
-                cursor('not-allowed');
+              binder.x = prevX;
+              binder.y = bestY;
+              targetObj.x = prevX;
+              targetObj.y = bestY;
             }
-
-            binder.obj.update();
-            binder.x = binder.obj.x;
-            binder.y = binder.obj.y;
+            console.log("Updateind");
+            targetObj.update();
+          }
         }
+
+        binder.oldX = targetObj.x;
+        binder.oldY = targetObj.y;
 
         cursor('move');
         binder.update();
@@ -1316,7 +1324,7 @@ function _MOUSEMOVE(event) {
             objTarget.update();
           }
 
-          if (hasCollision(objTarget, 20)) {
+          if (hasCollision(objTarget, 12)) {
             objTarget.x = prevX;
             objTarget.y = prevY;
             objTarget.angle = prevAngle;
@@ -1742,8 +1750,8 @@ function _MOUSEUP(event) {
   //**************************************************************************
   if (mode == 'object_mode') {
     binder.update();
-    // console.log("Entering => ", binder);
-    if (hasCollision(binder, 20)) {
+    console.log("Entering => ", binder);
+    if (hasCollision(binder, 12)) {
         $('#boxinfo').html('<span style="color:#ff4444">Cannot place object here — too close to another object</span>');
         binder.graph.remove();
         binder = undefined;

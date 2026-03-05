@@ -1,3 +1,5 @@
+import { combinedScripts } from './_combined_scripts.js';
+
 const htmlTemplate = `
   <header>Make by Home Rough Editor Ver.0.95</header>
 
@@ -214,7 +216,7 @@ const htmlTemplate = `
     <hr />
     <ul class="list-unstyled">
       <br /><br />
-      <li><button class="btn btn-light shadow fully" id="setAsPivotItem">Set as pivot element</button></li>
+      <li><button class="btn btn-light shadow fully" id="setAsPivotItem">Set as start element</button></li>
       <li><button class="btn btn-light shadow fully" id="objToolsHinge">Reverse hinges</button></li>
 
       <p>Width [<span id="doorWindowWidthScale"></span>] : <span id="doorWindowWidthVal"></span> cm</span></p>
@@ -692,9 +694,11 @@ class EditorElement extends HTMLElement {
     }
 
     async connectedCallback() {
+        this._loadGlobalStyles();
+
         this._render();
 
-        const mode = this.getAttribute("mode") || "edit";
+        const mode = this.getAttribute("mode") || "edition";
         // SET A FLAG READONLY IN WINDOW 
         if (mode === 'readonly')
             Object.defineProperty(window, '__READONLY_MODE__', {
@@ -704,11 +708,10 @@ class EditorElement extends HTMLElement {
                 enumerable: false,
             });
 
-        await this._loadScript("./mousewheel.js");
-        await this._loadScript("./func.js");
-        await this._loadScript("./qSVG.js");
-        await this._loadScript("./editor.js");
-        await this._loadScript("./engine.js");
+        await this._loadExternalScript("https://code.jquery.com/jquery-3.6.1.slim.min.js");
+        await this._loadExternalScript("https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js");
+
+        await this._execInlineScript(combinedScripts);
 
         this.querySelector('#lin').addEventListener('', () => {
             if (mode !== 'readonly')
@@ -732,11 +735,45 @@ class EditorElement extends HTMLElement {
         this.innerHTML = htmlTemplate;
     }
 
-    _loadScript(src) {
+    _loadGlobalStyles() {
+      const styles = [
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css",
+        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css",
+        "./css/style.css"
+      ];
+
+      styles.forEach(href => {
+        if (!document.querySelector(`link[href="${href}"]`)) {
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = href;
+          document.head.appendChild(link);
+        }
+      });
+    }
+
+    _loadExternalScript(src) {
+      return new Promise((resolve) => {
+        if (document.querySelector(`script[src="${src}"]`)) {
+          resolve();
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = src;
+        script.onload = resolve;
+
+        document.body.appendChild(script);
+      });
+    }
+
+    _execInlineScript(code) {
         return new Promise((resolve) => {
-            const script = document.createElement("script");
-            script.src = src;
-            script.onload = resolve;
+            const blob = new Blob([code], { type: 'application/javascript' });
+            const url  = URL.createObjectURL(blob);
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = () => { URL.revokeObjectURL(url); resolve(); };
             this.appendChild(script);
         });
     }

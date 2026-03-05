@@ -763,7 +763,7 @@ document.getElementById('bboxWidth').addEventListener("input", function () {
     objTarget.update();
 
     if (
-        hasCollision(objTarget, objTarget.family !== 'free' ? 20 : 0) ||
+        hasCollision(objTarget, objTarget.family !== 'free' ? 12 : 0) ||
         (objTarget.family === 'free' && hasWallCollision(objTarget))
     ) {
         objTarget.size = prevSize;
@@ -794,7 +794,7 @@ document.getElementById('bboxHeight').addEventListener("input", function () {
     objTarget.update();
 
     if (
-        hasCollision(objTarget, objTarget.family !== 'free' ? 20 : 0) ||
+        hasCollision(objTarget, objTarget.family !== 'free' ? 12 : 0) ||
         (objTarget.family === 'free' && hasWallCollision(objTarget))
     ) {
         objTarget.thick = prevThick;
@@ -858,7 +858,7 @@ document.getElementById('doorWindowWidth').addEventListener("input", function ()
     }
 
     if (
-        hasCollision(objTarget, objTarget.family !== 'free' ? 20 : 0) ||
+        hasCollision(objTarget, objTarget.family !== 'free' ? 12 : 0) ||
         (objTarget.family === 'free' && hasWallCollision(objTarget))
     ) {
         objTarget.size = prevSize;
@@ -2555,4 +2555,32 @@ function hasWallCollision(movingObj, margin = 0) {
             return true;
     }
     return false;
+}
+
+function tryAxis(startVal, targetVal, otherVal, isX, target = undefined) {
+    target = target ?? binder;
+    let low = startVal;
+    let high = targetVal;
+    let best = startVal;
+
+    // Binary search for a better aproximation to the colide
+    for (let steps = 0; steps < 20; steps ++) {
+        const mid = (low + high) / 2;
+        if (isX) {
+            target.x = mid; 
+            target.y = otherVal; 
+        } else {
+            target.x = otherVal; 
+            target.y = mid;
+        }
+        target.update();
+
+        if (!hasCollision(target) && !hasWallCollision(target)) {
+            best = mid;
+            low = mid; 
+        } else {
+            high = mid; 
+        }
+    }
+    return best;
 }
